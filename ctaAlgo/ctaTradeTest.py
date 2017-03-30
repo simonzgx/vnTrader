@@ -208,11 +208,14 @@ class tradeTest(CtaTemplate):
 	    self.filterDic[tick.vtSymbol] = {'ask':[], 'bid':[]}
 	self.filterDic[tick.vtSymbol]['ask'].append(tick.askPrice1)
 	self.filterDic[tick.vtSymbol]['bid'].append(tick.bidPrice1)
+
 	if len(self.filterDic[tick.vtSymbol]['bid'] <= 10):
 	    return False
-	if self.filterDic[tick.vtSymbol]['ask'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['ask'][:-1]) - 1  >= self.var/100 :
+	askVar = self.filterDic[tick.vtSymbol]['ask'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['ask'][:-1]) - 1
+	bidVar = self.filterDic[tick.vtSymbol]['bid'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['bid'][:-1]) - 1 
+	if abs(askVar)  >= self.var/100 :
 	    return False
-	if self.filterDic[tick.vtSymbol]['bid'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['bid'][:-1]) - 1  >= self.var/100 :
+	if abs(bidVar) >= self.var/100 :
 	    return False
 	return True
 

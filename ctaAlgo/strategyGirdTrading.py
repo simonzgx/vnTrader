@@ -193,20 +193,18 @@ class strategyGirdTrading(CtaTemplate):
 
     def doFilter(self, tick):
 	if tick.vtSymbol not in self.filterDic.keys():
-	    self.filterDic[tick.vtSymbol] = {}
-	    self.filterDic[tick.vtSymbol]['ask'] = []
-	    self.filterDic[tick.vtSymbol]['bid'] = []
+	    self.filterDic[tick.vtSymbol] = {'ask':[], 'bid':[]}
 	self.filterDic[tick.vtSymbol]['ask'].append(tick.askPrice1)
 	self.filterDic[tick.vtSymbol]['bid'].append(tick.bidPrice1)
-	print self.filterDic[tick.vtSymbol]['bid']
-	if len(self.filterDic[tick.vtSymbol]['bid']) <= 10:
+
+	if len(self.filterDic[tick.vtSymbol]['bid'] <= 10):
 	    return False
-	if self.filterDic[tick.vtSymbol]['ask'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['ask'][:-1]) - 1  >= self.var/100 :
+	askVar = self.filterDic[tick.vtSymbol]['ask'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['ask'][:-1]) - 1
+	bidVar = self.filterDic[tick.vtSymbol]['bid'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['bid'][:-1]) - 1 
+	if abs(askVar)  >= self.var/100 :
 	    return False
-	if self.filterDic[tick.vtSymbol]['bid'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['bid'][:-1]) - 1  >= self.var/100 :
+	if abs(bidVar) >= self.var/100 :
 	    return False
-	self.filterDic[tick.vtSymbol]['bid'].pop(0)
-	self.filterDic[tick.vtSymbol]['ask'].pop(0)
 	return True
 #----------------------------------------------------------------------
     def onBar(self, bar):
