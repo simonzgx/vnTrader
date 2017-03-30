@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=vt
+Comment=
+Exec=python /home/vnpy/vnpy/vn.trader/vtMain.py
+Icon=/home/vnpy/vnpy/vn.trader/vnpy.png
+Path=/home/vnpy/vnpy/vn.trader
+Terminal=false
+StartupNotify=false
