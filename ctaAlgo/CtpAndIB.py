@@ -34,6 +34,8 @@ class CtpAndIB(CtaTemplate):
     posstate={}
     postoday={}         #今日持仓
     tradestate={}       #交易状态
+    productClass = PRODUCT_FUTURES    # 产品类型（只有IB接口需要）
+    currency = CURRENCY_USD        # 货币（只有IB接口需要） 
     tradeid=EMPTY_STRING
     cdnum=0
 #=========================================
