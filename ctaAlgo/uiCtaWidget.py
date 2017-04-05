@@ -9,32 +9,38 @@ from uiBasicWidget import QtGui, QtCore, BasicCell
 from eventEngine import *
 from ctaTradeTest import ParamWindow
 from strategyGirdTrading import ParamWindow2
+from CtpAndIB import ParamWindow3
 import json
 import os
 #========================================================================
 class strategyWindow(QtGui.QMainWindow):
 
-    def __init__(self,ParamWindow,ParamWindow2,CtaEngineManager=None):
+    def __init__(self,ParamWindow,ParamWindow2,ParamWindow3,CtaEngineManager=None):
 	super(strategyWindow,self).__init__()
 	self.setWindowTitle(u"策略类型")
 	self.pw = ParamWindow
 	self.gt = ParamWindow2
+	self.cai = ParamWindow3
 	self.ce = CtaEngineManager
 	self.tradeTestButton =  QtGui.QPushButton(u"配置双合约套利策略",self)
 	self.tradeTestButton.clicked.connect(self.createTradeTest) 
 	self.girdTradingButton = QtGui.QPushButton(u"配置单合约网格策略",self)
 	self.girdTradingButton.clicked.connect(self.createGirdTrading)
+	self.CtpAndIB =  QtGui.QPushButton(u"配置CTP IB套利策略",self)
+	self.CtpAndIB.clicked.connect(self.createCtpAndIB)
 	self.moreStrategyCoding =  QtGui.QPushButton(u"更多策略开发中",self)
 	self.moreStrategyCoding.clicked.connect(self.coding) 
 	self.initUI()
 	
     def initUI(self):
 	self.resize(350, 350)
-	self.tradeTestButton.move(50,50)
+	self.tradeTestButton.move(50,20)
 	self.tradeTestButton.resize(160,50)
-	self.girdTradingButton.move(50,120)
+	self.girdTradingButton.move(50,90)
 	self.girdTradingButton.resize(160,50)
-	self.moreStrategyCoding.move(50,190)
+	self.CtpAndIB.move(50,160)
+	self.CtpAndIB.resize(160,50)
+	self.moreStrategyCoding.move(50,230)
 	self.moreStrategyCoding.resize(160,50)
 	self.center()
     def createTradeTest(self):
@@ -42,7 +48,10 @@ class strategyWindow(QtGui.QMainWindow):
     
     def createGirdTrading(self):
 	self.gt.show()	
-	
+
+    def createCtpAndIB(self):
+	self.cai.show()
+
     def coding(self):
 	pass
 
@@ -115,7 +124,9 @@ class CtaStrategyManager(QtGui.QGroupBox):
 	
 	if className == 'tradeTest':
             self.paramWindow = ParamWindow(self.name,longsymbol,shortsymbol)
-	else :
+	elif className == "CtpAndIB":
+            self.paramWindow = ParamWindow3(self.name,longsymbol,shortsymbol)
+	else:
 	    self.paramWindow = ParamWindow2(self.name, direction, vtSymbol)
     #----------------------------------------------------------------------
     def initUi(self):
@@ -247,7 +258,8 @@ class CtaEngineManager(QtGui.QWidget):
         self.strategyLoaded = False
 	self.pw = ParamWindow("","","",self)
 	self.gt = ParamWindow2("","","",self)
-        self.sw = strategyWindow(self.pw, self.gt)
+	self.cai = ParamWindow3("","","",self)
+        self.sw = strategyWindow(self.pw, self.gt,self.cai)
         self.initUi()
         self.registerEvent()
         # 记录日志
@@ -304,7 +316,9 @@ class CtaEngineManager(QtGui.QWidget):
 	    p = self.ctaEngine.strategyDict[name]
 	    if p.className == 'tradeTest' :
                 strategyManager = CtaStrategyManager(self.ctaEngine, self.eventEngine, name, p.className, '', '', p.longsymbol, p.shortsymbol)
-	    else :
+	    if p.className == 'CtpAndIB' :
+		strategyManager = CtaStrategyManager(self.ctaEngine, self.eventEngine, name, p.className, '', '', p.longsymbol, p.shortsymbol)
+	    else:
 		strategyManager = CtaStrategyManager(self.ctaEngine, self.eventEngine, name, p.className, p.direction, p.vtSymbol, '', '')
             vbox.addWidget(strategyManager)
 
@@ -334,9 +348,7 @@ class CtaEngineManager(QtGui.QWidget):
     #----------------------------------------------------------------------
     
     def addStrategy(self):
-	self.pw.__init__("","","",self)
-	self.gt.__init__('','','',self)
-	self.sw.__init__(self.pw,self.gt)
+
 	self.sw.show()
  
 

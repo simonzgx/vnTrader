@@ -660,7 +660,8 @@ class TradingWidget(QtGui.QFrame):
                     EXCHANGE_CME,
                     EXCHANGE_NYMEX,
                     EXCHANGE_GLOBEX,
-                    EXCHANGE_IDEALPRO]
+                    EXCHANGE_IDEALPRO,
+		    EXCHANGE_ECBOT]
     
     currencyList = [CURRENCY_NONE,
                     CURRENCY_CNY,

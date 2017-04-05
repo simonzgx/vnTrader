@@ -48,6 +48,7 @@ exchangeMap[EXCHANGE_GLOBEX] = 'GLOBEX'
 exchangeMap[EXCHANGE_IDEALPRO] = 'IDEALPRO'
 exchangeMap[EXCHANGE_HKEX] = 'HKEX'
 exchangeMap[EXCHANGE_HKFE] = 'HKFE'
+exchangeMap[EXCHANGE_ECBOT] = 'ECBOT'
 exchangeMapReverse = {v:k for k,v in exchangeMap.items()}
 
 # 报单状态映射
@@ -185,12 +186,18 @@ class IbGateway(VtGateway):
         
         contract = Contract()
         contract.localSymbol = str(subscribeReq.symbol)
+
         contract.exchange = exchangeMap.get(subscribeReq.exchange, '')
+
         contract.secType = productClassMap.get(subscribeReq.productClass, '')
+	
         contract.currency = currencyMap.get(subscribeReq.currency, '')
-        contract.expiry = subscribeReq.expiry
-        contract.strike = subscribeReq.strikePrice
-        contract.right = optionTypeMap.get(subscribeReq.optionType, '')
+
+        #contract.expiry = subscribeReq.expiry
+
+        #contract.strike = subscribeReq.strikePrice
+
+        #contract.right = optionTypeMap.get(subscribeReq.optionType, '')
 
         # 获取合约详细信息
         self.tickerId += 1
@@ -204,7 +211,6 @@ class IbGateway(VtGateway):
         ct.vtSymbol = '.'.join([ct.symbol, ct.exchange])
         ct.productClass = subscribeReq.productClass
         self.contractDict[ct.vtSymbol] = ct
-        
         # 订阅行情
         self.tickerId += 1   
         self.api.reqMktData(self.tickerId, contract, '', False, TagValueList())
@@ -370,6 +376,12 @@ class IbWrapper(IbApi):
                 tick.date = dt.strftime('%Y%m%d')
             
                 # 行情数据更新
+                newtick = copy(tick)
+                self.gateway.onTick(newtick)
+	    else :
+                dt = datetime.now()
+                tick.time = dt.strftime('%H:%M:%S.%f')
+                tick.date = dt.strftime('%Y%m%d')
                 newtick = copy(tick)
                 self.gateway.onTick(newtick)
         else:

@@ -24,8 +24,8 @@ class CtaTemplate(object):
     name = EMPTY_UNICODE           # 策略实例名称
     vtSymbol = EMPTY_STRING        # 交易的合约vt系统代码
     tradeparam={}
-    productClass = EMPTY_STRING    # 产品类型（只有IB接口需要）
-    currency = EMPTY_STRING        # 货币（只有IB接口需要）    
+    productClass = PRODUCT_FUTURES    # 产品类型（只有IB接口需要）
+    currency = CURRENCY_USD        # 货币（只有IB接口需要）    
     # 策略的基本变量，由引擎管理
     inited = False                 # 是否进行了初始化
     trading = False                # 是否启动交易，由引擎管理
@@ -230,6 +230,7 @@ class DataRecorder(CtaTemplate):
     def onTick(self, tick):
         """收到行情TICK推送"""
         # 收到Tick后，首先插入到数据库里
+	'''
         self.insertTick(tick)
         
         # 计算K线
@@ -268,7 +269,8 @@ class DataRecorder(CtaTemplate):
             
             bar.volume = bar.volume + tick.volume   # 成交量是累加的
             bar.openInterest = tick.openInterest    # 持仓量直接更新
-        
+        '''
+	pass
     #----------------------------------------------------------------------
     def onOrder(self, order):
         """收到委托变化推送"""

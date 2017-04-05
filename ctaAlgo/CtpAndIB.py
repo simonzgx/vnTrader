@@ -1,16 +1,5 @@
 # encoding: UTF-8
 
-"""
-这里的Demo是一个最简单的策略实现，并未考虑太多实盘中的交易细节，如：
-1. 委托价格超出涨跌停价导致的委托失败
-2. 委托未成交，需要撤单后重新委托
-3. 断网后恢复交易状态
-4. 等等
-这些点是作者选择特意忽略不去实现，因此想实盘的朋友请自己多多研究CTA交易的一些细节，
-做到了然于胸后再去交易，对自己的money和时间负责。
-也希望社区能做出一个解决了以上潜在风险的Demo出来。
-"""
-
 import json
 from ctaBase import *
 from ctaTemplate import CtaTemplate
@@ -21,9 +10,9 @@ import numpy as np
 import datetime
 
 ########################################################################
-class tradeTest(CtaTemplate):
+class CtpAndIB(CtaTemplate):
     """策略"""
-    className = 'tradeTest'
+    className = 'CtpAndIB'
     author = u'Simon'
 
     # 策略参数
@@ -47,15 +36,6 @@ class tradeTest(CtaTemplate):
     tradestate={}       #交易状态
     tradeid=EMPTY_STRING
     cdnum=0
-    
-#以下代码更新于2016/11/21==================
-
-
-    longsymbolAskPrice = 0
-    longsymbolBidPrice = 0
-    shortsymbolAskPrice = 0
-    shortsymbolBidPrice = 0	
-
 #=========================================
     # 参数列表，保存了参数的名称
     paramList = ['name',
@@ -72,11 +52,11 @@ class tradeTest(CtaTemplate):
 		'dfr',
 		'dfr_2']
     #----------------------------------------------------------------------
-    def __init__(self, ctaEngine, setting,fileName):
+    def __init__(self, ctaEngine, setting, fileName):
 	self.fileName = fileName
 	self.filterDic = {}
         """Constructor"""
-        super(tradeTest, self).__init__(ctaEngine, setting)
+        super(CtpAndIB, self).__init__(ctaEngine, setting)
 	ce = ctaEngine
 	ce.doCheck()
         if setting :
@@ -131,72 +111,8 @@ class tradeTest(CtaTemplate):
 
     #----------------------------------------------------------------------
     def onTick(self, tick):
-        """收到行情TICK推送（必须由用户继承实现）"""
-        # 计算K线
-	flag =False
-	now = datetime.datetime.now()
-	if now.hour >= 9 and now.hour <=11 :
-	    flag = True
-	    if now.hour == 11 and now.minute >= 30 :  #  交易时间 9.02 - 11.29
-		flag = False
 
-	    if now.hour == 9 and now.minute <= 1:
-		flag = False
-
-	if now.hour >= 13 and now.hour <= 14:	#交易时间 13.32 - 14.59
-	    flag = True
-	    if now.hour ==13 and now.minute <= 31:
-		flag = False
-
-	if now.hour >=21 and now.hour <= 22:	#交易时间 21.02 - 22.59
-	    flag = True
-	    if now.hour == 21 and now.minute <=1 :
-		flag = False 
-
-	        self.loadPosInfo()
-
-	if now.hour > int(self.stopTime[:2]):
-	    flag = False
-	if now.hour == int(self.stopTime[:2]) and now.minute >= int(self.stopTime[-2:]):
-	    flag = False
-	if not flag:
-	    return
-	if self.isFilter :
-	    if not self.doFilter(tick) :
-		return
-
-#2016/11/21=============================================================
-        if tick.vtSymbol==self.shortsymbol :
-            self.shortsymbolAskPrice = tick.askPrice1
-            self.shortsymbolBidPrice = tick.bidPrice1
-        else :
-            self.longsymbolAskPrice = tick.askPrice1
-            self.longsymbolBidPrice = tick.bidPrice1
-        if self.shortsymbolAskPrice!=0 and self.longsymbolAskPrice!=0:
-            self.dfr = self.shortsymbolBidPrice*self.shortPriceCoe - self.longsymbolAskPrice*self.longPriceCoe        
-            self.dfr_2 = self.shortsymbolAskPrice*self.shortPriceCoe - self.longsymbolBidPrice*self.longPriceCoe
-            for i in range(0,len(self.buyPrice)):
-	        if self.buyPrice[i] <= self.dfr and self.postoday[self.shortsymbol]<(i+1)*self.shortBuyUnit :
-		    tradeId = self.short(self.shortsymbolBidPrice-self.slippage, self.shortBuyUnit, self.shortsymbol, self.closeFirst)
-		    
-		    self.postoday[self.shortsymbol] += self.shortBuyUnit
-		    self.saveParameter()
-		if self.buyPrice[i] <= self.dfr and self.postoday[self.longsymbol]<(i+1)*self.longBuyUnit :
-		    tradeId = self.buy(self.longsymbolAskPrice+self.slippage, self.longBuyUnit, self.longsymbol, self.closeFirst)
-		    
-		    self.postoday[self.longsymbol] += self.longBuyUnit
-		    self.saveParameter()
-	        if self.dfr_2 <= self.buyPrice[i] - self.stpProfit and self.postoday[self.shortsymbol]> i*self.shortBuyUnit :	
-		    tradeId = self.cover(self.shortsymbolAskPrice+self.slippage, self.shortBuyUnit, self.shortsymbol, self.closeFirst)
-		    
-		    self.postoday[self.shortsymbol] -= self.shortBuyUnit
-		    self.saveParameter()
-		if self.dfr_2 <= self.buyPrice[i] - self.stpProfit and self.postoday[self.longsymbol]> i*self.longBuyUnit :
-		    tradeId = self.sell(self.longsymbolBidPrice-self.slippage, self.longBuyUnit, self.longsymbol, self.closeFirst)
-		    
-		    self.postoday[self.longsymbol] -= self.longBuyUnit
-		    self.saveParameter()
-        self.putEvent()
+	print tick.vtSymbol,tick.askPrice1
     def doFilter(self, tick):
 	if tick.vtSymbol not in self.filterDic.keys():
 	    self.filterDic[tick.vtSymbol] = {'ask':[], 'bid':[]}
@@ -220,7 +136,6 @@ class tradeTest(CtaTemplate):
 	    self.filterDic[tick.vtSymbol]['bid'] = []
 	self.filterDic[tick.vtSymbol]['ask'].append(tick.askPrice1)
 	self.filterDic[tick.vtSymbol]['bid'].append(tick.bidPrice1)
-	print self.filterDic[tick.vtSymbol]['bid']
 	if len(self.filterDic[tick.vtSymbol]['bid']) <= 10:
 	    return False
 	if self.filterDic[tick.vtSymbol]['ask'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['ask'][:-1]) - 1  >= self.var/100 :
@@ -306,9 +221,9 @@ class tradeTest(CtaTemplate):
             f.write(d1)
 	    f.close()
 ########################################################################################
-class ParamWindow(QtGui.QMainWindow):
+class ParamWindow3(QtGui.QMainWindow):
     def __init__(self,name=None, longsymbol=None, shortsymbol=None,CtaEngineManager=None):
-	super(ParamWindow,self).__init__()
+	super(ParamWindow3,self).__init__()
 	self.resize(350, 480)
 	self.shortsymbol = shortsymbol
 	self.longsymbol = longsymbol
@@ -537,7 +452,6 @@ class ParamWindow(QtGui.QMainWindow):
 	try:
 	    param['shortBuyUnit'] = int(self.lineEdit_label_shortBuyUnit.text())
 	except ValueError:
-	    print 'test'
 	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'请正确填写shortsymbol开仓手数！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes) 
 	    return
@@ -613,7 +527,7 @@ class ParamWindow(QtGui.QMainWindow):
 	    f.write(d1)
 	    f.close()
 	self.setting['name'] = str(self.strategyName)
-	self.setting['className'] = 'tradeTest'
+	self.setting['className'] = 'CtpAndIB'
 	self.setting['vtSymbol'] = self.longsymbol + ',' + self.shortsymbol
 	self.setting['longSymbol'] = self.longsymbol
 	self.setting['shortSymbol'] = self.shortsymbol
