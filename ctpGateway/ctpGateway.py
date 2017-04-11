@@ -665,8 +665,6 @@ class CtpTdApi(TdApi):
         fileName = os.getcwd() + '/' + fileName
 	posInfo = {}
 	accountID = {}
-#        with open(fileName, 'r') as f:
-#            accountID = json.load(f)
 
 	for x in dic.keys():
 	    vtSymbol = dic[x].pos.vtSymbol
@@ -1327,13 +1325,12 @@ class CtpTdApi(TdApi):
             req['VolumeCondition'] = defineDict['THOST_FTDC_VC_CV']        
         
         self.reqOrderInsert(req, self.reqID)
-	self.receivers = strategy.receivers
-	self.strategyName = strategy.name
-#	if strategy != None:
-#	    self.receivers = strategy.receivers
-#	    title = u"策略" + strategy.name + u"发送委托"
-#	    text = u'账户: ' + self.userID + "  symbol: "+ orderReq.symbol + u"  方向: " + orderReq.direction + u"  类型: " + orderReq.offset + u"  数量: " + str(orderReq.volume) + u"  价格: " + str(orderReq.price)
-#           emailSender(self.receivers, text, title)
+	if strategy == None:
+	    self.receivers = []
+	    self.strategyName = ''
+	else :
+      	    self.receivers = strategy.receivers
+	    self.strategyName = strategy.name
         # 返回订单号（字符串），便于某些算法进行动态管理
         vtOrderID = '.'.join([self.gatewayName, str(self.orderRef)])
         return vtOrderID

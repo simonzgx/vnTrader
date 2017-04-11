@@ -225,7 +225,7 @@ class IbGateway(VtGateway):
         self.tickProductDict[self.tickerId] = subscribeReq.productClass
 
     #----------------------------------------------------------------------
-    def sendOrder(self, orderReq):
+    def sendOrder(self, orderReq,strategy=None):
         """发单"""
         # 增加报单号1，最后再次进行查询
         # 这里双重设计的目的是为了防止某些情况下，连续发单时，nextOrderId的回调推送速度慢导致没有更新
@@ -242,8 +242,8 @@ class IbGateway(VtGateway):
         contract.right = optionTypeMap.get(orderReq.optionType, '')
         contract.lastTradeDateOrContractMonth = str(orderReq.lastTradeDateOrContractMonth)
         contract.multiplier = str(orderReq.multiplier)
-        
         # 创建委托对象
+	print orderReq.priceType
         order = Order()
         order.orderId = self.orderId
         order.clientId = self.clientId
@@ -251,7 +251,7 @@ class IbGateway(VtGateway):
         order.lmtPrice = orderReq.price
         order.totalQuantity = orderReq.volume
         order.orderType = priceTypeMap.get(orderReq.priceType, '')
-        
+        print order.orderType
         # 发送委托
         self.api.placeOrder(self.orderId, contract, order)
         
@@ -515,7 +515,6 @@ class IbWrapper(IbApi):
     def updatePortfolio(self, contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName):
         """持仓更新"""
         pos = VtPositionData()
-    
         pos.symbol = contract.localSymbol
         pos.exchange = exchangeMapReverse.get(contract.exchange, contract.exchange)
         pos.vtSymbol = '.'.join([pos.symbol, pos.exchange])
@@ -524,7 +523,28 @@ class IbWrapper(IbApi):
         pos.price = averageCost
         pos.vtPositionName = pos.vtSymbol
         pos.gatewayName = self.gatewayName
-    
+	#fileName = "PositionInfo.json"
+        
+	#with open(fileName, 'r') as f:
+	 #   param = json.load(f)
+	#l = {}
+	#s = {}
+	#if int(pos.position) > 0 :
+	    #l['td'] = pos.position
+	    #l['ytd'] = 0
+	    #s['td'] = 0
+	    #s['ytd'] = 0
+	#else :
+	#    s['td'] = -1*pos.position
+	#    s['ytd'] = 0
+	#    l['td'] = 0
+	#    l['ytd'] = 0
+	#param[pos.symbol] = {}
+	#param[pos.symbol]['long'] = l
+	#param[pos.symbol]['short'] = s
+	#d1 = json.dumps(param,sort_keys=True,indent=4)
+	#with open(fileName, 'w') as f:
+	#    f.write(d1)
         self.gateway.onPosition(pos)
         
     #----------------------------------------------------------------------

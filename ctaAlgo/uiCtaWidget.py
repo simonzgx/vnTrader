@@ -316,7 +316,7 @@ class CtaEngineManager(QtGui.QWidget):
 	    p = self.ctaEngine.strategyDict[name]
 	    if p.className == 'tradeTest' :
                 strategyManager = CtaStrategyManager(self.ctaEngine, self.eventEngine, name, p.className, '', '', p.longsymbol, p.shortsymbol)
-	    if p.className == 'CtpAndIB' :
+	    elif p.className == 'CtpAndIB' :
 		strategyManager = CtaStrategyManager(self.ctaEngine, self.eventEngine, name, p.className, '', '', p.longsymbol, p.shortsymbol)
 	    else:
 		strategyManager = CtaStrategyManager(self.ctaEngine, self.eventEngine, name, p.className, p.direction, p.vtSymbol, '', '')

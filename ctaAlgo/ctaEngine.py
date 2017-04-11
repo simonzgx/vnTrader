@@ -29,7 +29,7 @@ from vtConstant import *
 from vtGateway import VtSubscribeReq, VtOrderReq, VtCancelOrderReq, VtLogData
 from vtFunction import todayDate, emailSender
 from ctpGateway.ctpGateway import CtpGateway
-
+from ibGateway import ibGateway
 ########################################################################
 class CtaEngine(object):
     """CTA策略引擎"""
@@ -134,20 +134,44 @@ class CtaEngine(object):
 #==============================================================================
 #==============================================================================
 #==============================================================================
- 
-    #----------------------------------------------------------------------
-    def sendOrder(self, vtSymbol, orderType, price, volume, strategy, closeFirst=None):
-        """发单"""
+    def sendIBOrder(self, vtSymbol, orderType, price, volume, strategy, isMKT):
         contract = self.mainEngine.getContract(vtSymbol)
         req = VtOrderReq()
         req.symbol = contract.symbol
         req.exchange = contract.exchange
         req.price = price
         req.volume = volume
-        
+        if isMKT :
+	    req.priceType = PRICETYPE_MARKETPRICE
+	else :
+	    req.priceType = PRICETYPE_LIMITPRICE
         req.productClass = strategy.productClass
-        req.currency = strategy.currency        
-        recivers = strategy.receivers
+        req.currency = strategy.currency 
+	if orderType == CTAORDER_BUY or orderType == CTAORDER_COVER :
+	    req.direction = DIRECTION_LONG
+	else :
+	    req.direction = DIRECTION_SHORT
+
+        vtOrderID = self.mainEngine.sendOrder(req, contract.gatewayName, strategy)    # 发单
+        self.orderStrategyDict[vtOrderID] = strategy        # 保存vtOrderID和策略的映射关系
+
+        self.writeCtaLog(u'策略%s发送委托，%s，%s，%s@%s' 
+                         %(strategy.name, vtSymbol, req.direction, volume, price))
+        return vtOrderID
+    #----------------------------------------------------------------------
+    def sendOrder(self, vtSymbol, orderType, price, volume, strategy, isMKT):
+        """发单"""
+        contract = self.mainEngine.getContract(vtSymbol)
+	if contract.gatewayName == "IB":
+	    return self.sendIBOrder(vtSymbol, orderType, price, volume, strategy, isMKT)
+        req = VtOrderReq()
+        req.symbol = contract.symbol
+        req.exchange = contract.exchange
+        req.price = price
+        req.volume = volume
+        closeFirst = strategy.closeFirst
+        req.productClass = strategy.productClass
+        req.currency = strategy.currency     
         # 设计为CTA引擎发出的委托只允许使用限价单
         req.priceType = PRICETYPE_LIMITPRICE 
 	if vtSymbol not in self.mPosInfo.keys():
