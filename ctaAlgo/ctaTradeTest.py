@@ -31,23 +31,31 @@ class tradeTest(CtaTemplate):
 
 
     # 策略变量
+    bar = {}
+    closelist={}
+    barMinute = {}
+    lasttick={}
 
+    bartime={}
+    signal={}
 
+    longsymbol=EMPTY_STRING
+    shortsymbol=EMPTY_STRING
+    poslimit=1
+    posstate={}
+    postoday={}         #今日持仓
+    tradestate={}       #交易状态
     tradeid=EMPTY_STRING
     cdnum=0
     
 #以下代码更新于2016/11/21==================
-    posstate={}
-    postoday={}         #今日持仓
-    tradestate={}       #交易状态
+
 
     longsymbolAskPrice = 0
     longsymbolBidPrice = 0
     shortsymbolAskPrice = 0
     shortsymbolBidPrice = 0	
-    tradeid=EMPTY_STRING
-    productClass = PRODUCT_FUTURES    # 产品类型（只有IB接口需要）
-    currency = CURRENCY_USD        # 货币（只有IB接口需要）
+
 #=========================================
     # 参数列表，保存了参数的名称
     paramList = ['name',
