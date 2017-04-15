@@ -127,7 +127,7 @@ class strategyGirdTrading(CtaTemplate):
 	    flag = True
 	    if now.hour == 11 and now.minute >= 30 :
 		flag = False
-	    if now.hour == 9 and now.minute == 0:
+	    if now.hour == 9 and now.minute <=1 :
 		flag = False
 	if now.hour >= 13 and now.hour <= 14:
 	    flag = True

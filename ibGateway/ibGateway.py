@@ -243,7 +243,6 @@ class IbGateway(VtGateway):
         contract.lastTradeDateOrContractMonth = str(orderReq.lastTradeDateOrContractMonth)
         contract.multiplier = str(orderReq.multiplier)
         # 创建委托对象
-	print orderReq.priceType
         order = Order()
         order.orderId = self.orderId
         order.clientId = self.clientId
@@ -251,7 +250,6 @@ class IbGateway(VtGateway):
         order.lmtPrice = orderReq.price
         order.totalQuantity = orderReq.volume
         order.orderType = priceTypeMap.get(orderReq.priceType, '')
-        print order.orderType
         # 发送委托
         self.api.placeOrder(self.orderId, contract, order)
         

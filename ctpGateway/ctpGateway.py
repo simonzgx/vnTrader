@@ -653,10 +653,8 @@ class CtpTdApi(TdApi):
         
         # 更新持仓缓存，并获取VT系统中持仓对象的返回值
         pos = posBuffer.updateBuffer(data)
-	#for x in self.posBufferDict.keys():
-	    #print self.posBufferDict[x].pos.vtSymbol, self.posBufferDict[x].direction,self.posBufferDict[x].todayPosition, " ",self.posBufferDict[x].ydPosition
-	self.savePosBuffer(self.posBufferDict)
         self.gateway.onPosition(pos)
+	self.savePosBuffer(self.posBufferDict)
 #========================================================================================
 #========================================================================================
 #========================================================================================
@@ -689,12 +687,6 @@ class CtpTdApi(TdApi):
 		accountID[vtSymbol]['short']['td'] = dic[x].todayPosition
 		accountID[vtSymbol]['short']["ytd"] = dic[x].ydPosition
 
-
-#	for x in accountID.keys():
-#	    for y in accountID[x].keys():
-#		if len(accountID[x][y])==0:
-#		    accountID[x][y]['td']=0
-#		    accountID[x][y]['ytd']=0
 	d1 = json.dumps(accountID,sort_keys=True,indent=4)
 	with open(fileName,'w') as f:
 	    f.write(d1)

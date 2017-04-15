@@ -29,7 +29,6 @@ from vtConstant import *
 from vtGateway import VtSubscribeReq, VtOrderReq, VtCancelOrderReq, VtLogData
 from vtFunction import todayDate, emailSender
 from ctpGateway.ctpGateway import CtpGateway
-from ibGateway import ibGateway
 ########################################################################
 class CtaEngine(object):
     """CTA策略引擎"""

@@ -87,6 +87,7 @@ class tradeTest(CtaTemplate):
             self.postoday[vts]=0
             self.posstate[vts]=0
 	self.loadParameter()
+	self.isStart = False
         self.dfr = 0
         self.dfr_2 = 0
     #----------------------------------------------------------------------
@@ -106,6 +107,7 @@ class tradeTest(CtaTemplate):
         
     #----------------------------------------------------------------------
     def onStart(self):
+	self.isStart = True
         self.loadParameter()
 	self.loadPosInfo()
         """启动策略（必须由用户继承实现）"""
@@ -114,6 +116,8 @@ class tradeTest(CtaTemplate):
     
     #----------------------------------------------------------------------
     def onStop(self):
+	self.isStart = False
+	print self.isStart
 	self.filterDic = {}
 	self.loadPosInfo()
         self.saveParameter()
@@ -156,8 +160,8 @@ class tradeTest(CtaTemplate):
 	    flag = False
 	if now.hour == int(self.stopTime[:2]) and now.minute >= int(self.stopTime[-2:]):
 	    flag = False
-	#if not flag:
-	    #return
+	if not flag:
+	    return
 	if self.isFilter :
 	    if not self.doFilter(tick) :
 		return
@@ -172,24 +176,26 @@ class tradeTest(CtaTemplate):
         if self.shortsymbolAskPrice!=0 and self.longsymbolAskPrice!=0:
             self.dfr = self.shortsymbolBidPrice*self.shortPriceCoe - self.longsymbolAskPrice*self.longPriceCoe        
             self.dfr_2 = self.shortsymbolAskPrice*self.shortPriceCoe - self.longsymbolBidPrice*self.longPriceCoe
+	    if not self.isStart:
+		return
             for i in range(0,len(self.buyPrice)):
 	        if self.buyPrice[i] <= self.dfr and self.postoday[self.shortsymbol]<(i+1)*self.shortBuyUnit :
-		    tradeId = self.short(self.shortsymbolBidPrice-self.slippage,self.shortBuyUnit,self.shortsymbol,self.shortMKT)
+		    tradeId = self.short(self.shortsymbolBidPrice-self.slippage, self.shortBuyUnit, self.shortsymbol)
 		    
 		    self.postoday[self.shortsymbol] += self.shortBuyUnit
 		    self.saveParameter()
 		if self.buyPrice[i] <= self.dfr and self.postoday[self.longsymbol]<(i+1)*self.longBuyUnit :
-		    tradeId = self.buy(self.longsymbolAskPrice+self.slippage, self.longBuyUnit, self.longsymbol,self.longMKT)
+		    tradeId = self.buy(self.longsymbolAskPrice+self.slippage, self.longBuyUnit, self.longsymbol)
 		    
 		    self.postoday[self.longsymbol] += self.longBuyUnit
 		    self.saveParameter()
 	        if self.dfr_2 <= self.buyPrice[i] - self.stpProfit and self.postoday[self.shortsymbol]> i*self.shortBuyUnit :	
-		    tradeId = self.cover(self.shortsymbolAskPrice+self.slippage, self.shortBuyUnit, self.shortsymbol, self.shortMKT)
+		    tradeId = self.cover(self.shortsymbolAskPrice+self.slippage, self.shortBuyUnit, self.shortsymbol)
 		    
 		    self.postoday[self.shortsymbol] -= self.shortBuyUnit
 		    self.saveParameter()
 		if self.dfr_2 <= self.buyPrice[i] - self.stpProfit and self.postoday[self.longsymbol]> i*self.longBuyUnit :
-		    tradeId = self.sell(self.longsymbolBidPrice-self.slippage, self.longBuyUnit, self.longsymbol, self.longMKT)
+		    tradeId = self.sell(self.longsymbolBidPrice-self.slippage, self.longBuyUnit, self.longsymbol)
 		    
 		    self.postoday[self.longsymbol] -= self.longBuyUnit
 		    self.saveParameter()
@@ -217,7 +223,6 @@ class tradeTest(CtaTemplate):
 	    self.filterDic[tick.vtSymbol]['bid'] = []
 	self.filterDic[tick.vtSymbol]['ask'].append(tick.askPrice1)
 	self.filterDic[tick.vtSymbol]['bid'].append(tick.bidPrice1)
-	print self.filterDic[tick.vtSymbol]['bid']
 	if len(self.filterDic[tick.vtSymbol]['bid']) <= 10:
 	    return False
 	if self.filterDic[tick.vtSymbol]['ask'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['ask'][:-1]) - 1  >= self.var/100 :
@@ -230,7 +235,19 @@ class tradeTest(CtaTemplate):
 
 #----------------------------------------------------------------------
     def onBar(self, bar):
-	pass
+        """收到Bar推送（必须由用户继承实现）"""
+
+        #计算基础变量macd，pbx .by hw
+        vtsymbol=bar.vtSymbol
+        if vtsymbol in self.closelist.keys():
+            l=self.closelist[vtsymbol]
+        else:
+            l=[]
+            self.closelist[vtsymbol]=l
+
+        l.append(bar.close)           
+        # 发出状态更新事件
+        self.putEvent()
 
     #----------------------------------------------------------------------
     def onOrder(self, order):
@@ -242,7 +259,13 @@ class tradeTest(CtaTemplate):
     def onTrade(self, trade):
         """收到成交推送（必须由用户继承实现）"""
         # 对于无需做细粒度委托控制的策略，可以忽略onOrder
+
+        #self.postoday[trade.vtSymbol]=self.postoday[trade.vtSymbol]+self.tradestate[trade.vtSymbol]
+        #self.tradestate[trade.vtSymbol]=0
         print 'trade',trade.vtSymbol,self.postoday[trade.vtSymbol],self.tradestate[trade.vtSymbol]
+
+        all_text = "trade: " + trade.vtSymbol 
+        title = u"策略 " + self.className + u' 成交信息'
         self.saveParameter()
     def loadParameter(self) :
 
@@ -261,8 +284,6 @@ class tradeTest(CtaTemplate):
         self.receivers = param['receivers']
 	self.stopTime = param['stoptime']
 	self.isFilter = param['isFilter']
-	self.longMKT = param['longMKT']
-	self.shortMKT = param['shortMKT']
 	if self.isFilter == True:
 	    self.var = param['var']
     def saveParameter(self) :
@@ -280,8 +301,6 @@ class tradeTest(CtaTemplate):
         param['receivers'] = self.receivers
 	param['stoptime'] = self.stopTime
 	param['isFilter'] = self.isFilter
-	param['longMKT'] = self.longMKT
-	param['shortMKT'] = self.shortMKT
 	if param['isFilter'] == True:
 	    param['var'] = self.var
 	d1 = json.dumps(param,sort_keys=True,indent=4)
@@ -289,10 +308,10 @@ class tradeTest(CtaTemplate):
             f.write(d1)
 	    f.close()
 ########################################################################################
-class ParamWindow(QtGui.QMainWindow):
+class ParamWindow(QtGui.QWidget):
     def __init__(self,name=None, longsymbol=None, shortsymbol=None,CtaEngineManager=None):
 	super(ParamWindow,self).__init__()
-	self.resize(365, 500)
+	self.resize(350, 480)
 	self.shortsymbol = shortsymbol
 	self.longsymbol = longsymbol
 	self.ce = CtaEngineManager
@@ -311,10 +330,10 @@ class ParamWindow(QtGui.QMainWindow):
 	self.onInit()
 
     def onInit(self):
-	self.saveButton.resize(50, 27)
-	self.cancelButton.resize(50, 27)
-	self.saveButton.move(220,450)
-	self.cancelButton.move(280,450)
+	#self.saveButton.resize(50, 27)
+	#self.cancelButton.resize(50, 27)
+	#self.saveButton.move(220,450)
+	#self.cancelButton.move(280,450)
 	self.saveButton.clicked.connect(self.saveParameter)
 	self.cancelButton.clicked.connect(self.cancel) 
 	self.initLabel()
@@ -323,93 +342,96 @@ class ParamWindow(QtGui.QMainWindow):
 	    self.showParam()
 
     def initLabel(self):
+	layout = QtGui.QGridLayout()
+	layout.setSpacing(4)
+	for j in range(0,9):
+	    layout.addWidget(QtGui.QLabel("    ",self),0,j)
+	for i in range(0,16):
+	    layout.addWidget(QtGui.QLabel(" ",self),i,0)
 	if self.name == "":
 	    strategyname_label = QtGui.QLabel(u"策略名",self)
-	    strategyname_label.setGeometry(QtCore.QRect(25,25,75,22))
 	    self.strategyname_label = QtGui.QLineEdit(self)
-	    self.strategyname_label.setGeometry(QtCore.QRect(120,25,75,22))
-
+	    layout.addWidget(strategyname_label,0,0)
+	    layout.addWidget(self.strategyname_label,0,1,1,3)
+	
 	self.closeFirst = QtGui.QCheckBox(u'平仓优先',self)
-	self.closeFirst.setGeometry(QtCore.QRect(210,25,90,22))
-
+	layout.addWidget(self.closeFirst,0,5,1,7)
 	label_longsymbol = QtGui.QLabel(u"多方向合约",self)
-	label_longsymbol.setGeometry(QtCore.QRect(25,50,75,22))
 	self.lineEdit_label_longsymbol = QtGui.QLineEdit(self)
-	self.lineEdit_label_longsymbol.setGeometry(QtCore.QRect(120,50,75,22))
-
-	self.longMKT = QtGui.QCheckBox(u'市价单', self)
-	self.longMKT.setGeometry(QtCore.QRect(210,50,90,22))
-
-	label_longBuyUnit = QtGui.QLabel(u"每笔数量", self)
-	label_longBuyUnit.setGeometry(QtCore.QRect(50,75,55,22))
+	layout.addWidget(self.lineEdit_label_longsymbol,1,1,1,3)
+	layout.addWidget(label_longsymbol,1,0)
+ 
+	label_longBuyUnit = QtGui.QLabel(u"    每笔数量",self)
 	self.lineEdit_label_longBuyUnit = QtGui.QLineEdit(self)
-	self.lineEdit_label_longBuyUnit.setGeometry(QtCore.QRect(120,75,75,22))
+	layout.addWidget(label_longBuyUnit,2,0)
+	layout.addWidget(self.lineEdit_label_longBuyUnit,2,1,1,3)
 
-	label_longPriceCoe = QtGui.QLabel(u"价格系数",self)
-	label_longPriceCoe.setGeometry(QtCore.QRect(50,100,55,22))
+	label_longPriceCoe = QtGui.QLabel(u"    价格系数",self)
 	self.lineEdit_label_longPriceCoe = QtGui.QLineEdit(self)
-	self.lineEdit_label_longPriceCoe.setGeometry(QtCore.QRect(120,100,75,22))
+	layout.addWidget(label_longPriceCoe,3,0)
+	layout.addWidget(self.lineEdit_label_longPriceCoe,3,1,1,3)
 
-	label_longPosition = QtGui.QLabel(u"当前持仓", self)
-	label_longPosition.setGeometry(QtCore.QRect(50,125,55,22))
+	label_longPosition = QtGui.QLabel(u"    当前持仓量", self)
 	self.lineEdit_label_longPosition = QtGui.QLineEdit(self)
-	self.lineEdit_label_longPosition.setGeometry(QtCore.QRect(120,125,75,22))
+	layout.addWidget(label_longPosition,4,0)
+	layout.addWidget(self.lineEdit_label_longPosition,4,1,1,3)
 
 	label_shortsymbol = QtGui.QLabel(u"空方向合约", self)
-	label_shortsymbol.setGeometry(QtCore.QRect(25,150,75,22))
 	self.lineEdit_label_shortsymbol = QtGui.QLineEdit(self)
-	self.lineEdit_label_shortsymbol.setGeometry(QtCore.QRect(120,150,75,22))
+	layout.addWidget(label_shortsymbol,5,0)
+	layout.addWidget(self.lineEdit_label_shortsymbol,5,1,1,3)
 
-	self.shortMKT = QtGui.QCheckBox(u'市价单', self)
-	self.shortMKT.setGeometry(QtCore.QRect(210,150,90,22))
-
-	label_shortBuyUnit = QtGui.QLabel(u"每笔数量", self)
-	label_shortBuyUnit.setGeometry(QtCore.QRect(50,175,55,22))
+	label_shortBuyUnit = QtGui.QLabel(u"    每笔数量", self)
 	self.lineEdit_label_shortBuyUnit = QtGui.QLineEdit(self)
-	self.lineEdit_label_shortBuyUnit.setGeometry(QtCore.QRect(120,175,75,22))
+	layout.addWidget(label_shortBuyUnit,6,0)
+	layout.addWidget(self.lineEdit_label_shortBuyUnit,6,1,1,3)
 
-	label_shortPriceCoe = QtGui.QLabel(u"价格系数", self)
-	label_shortPriceCoe.setGeometry(QtCore.QRect(50,200,55,22))
+	label_shortPriceCoe = QtGui.QLabel(u"    价格系数", self)
 	self.lineEdit_label_shortPriceCoe = QtGui.QLineEdit(self)
-	self.lineEdit_label_shortPriceCoe.setGeometry(QtCore.QRect(120,200,75,22))
+	self.lineEdit_label_shortPriceCoe.resize(75,22)
+	layout.addWidget(label_shortPriceCoe,7,0)
+	layout.addWidget(self.lineEdit_label_shortPriceCoe,7,1,1,3)
 
-	label_shortPosition = QtGui.QLabel(u"当前持仓", self)
-	label_shortPosition.setGeometry(QtCore.QRect(50,225,55,22))
+	label_shortPosition = QtGui.QLabel(u"   当前持仓量", self)
 	self.lineEdit_label_shortPosition = QtGui.QLineEdit(self)
-	self.lineEdit_label_shortPosition.setGeometry(QtCore.QRect(120,225,75,22))
+	layout.addWidget(label_shortPosition,8,0)
+	layout.addWidget(self.lineEdit_label_shortPosition,8,1,1,3)
 
 	label_stpProfit = QtGui.QLabel(u"止赢", self)
-	label_stpProfit.setGeometry(QtCore.QRect(25,250,55,22))
 	self.lineEdit_label_stpProfit = QtGui.QLineEdit(self)
-	self.lineEdit_label_stpProfit.setGeometry(QtCore.QRect(120,250,75,22))
+	layout.addWidget(label_stpProfit,9,0)
+	layout.addWidget(self.lineEdit_label_stpProfit,9,1,1,3)
+
 
 	label_slippage = QtGui.QLabel(u"滑点", self)
-	label_slippage.setGeometry(QtCore.QRect(210,250,55,22))
 	self.lineEdit_label_slippage = QtGui.QLineEdit(self)
-	self.lineEdit_label_slippage.setGeometry(QtCore.QRect(240,250,72,22))
+	layout.addWidget(label_slippage,9,5,1,1)
+	layout.addWidget(self.lineEdit_label_slippage,9,7,1,2)
+
+	self.isFilter = QtGui.QCheckBox(u'波动', self)
+	self.lineEdit_label_var = QtGui.QLineEdit(self)
+	layout.addWidget(self.isFilter,10,0)
+	layout.addWidget(self.lineEdit_label_var,10,1,1,3)
 
 	label_mail = QtGui.QLabel(u"邮箱", self)
-	label_mail.setGeometry(QtCore.QRect(25,300,55,22))
 	self.lineEdit_label_mail = QtGui.QLineEdit(self)
-	self.lineEdit_label_mail.setGeometry(QtCore.QRect(120,300,200,22))
+	layout.addWidget(label_mail,11,0)
+	layout.addWidget(self.lineEdit_label_mail,11,1,1,8)
 
 	label_buyPrice = QtGui.QLabel(u"开仓价差", self)
-	label_buyPrice.setGeometry(QtCore.QRect(25,325,55,22))
 	self.lineEdit_label_buyPrice = QtGui.QLineEdit(self)
-	self.lineEdit_label_buyPrice.setGeometry(QtCore.QRect(120,325,200,22))
+	layout.addWidget(label_buyPrice,12,0)
+	layout.addWidget(self.lineEdit_label_buyPrice,12,1,1,8)
 
 	label_stoptime = QtGui.QLabel(u"停止时间", self)
-	label_stoptime.setGeometry(QtCore.QRect(25,350,55,22))
 	self.lineEdit_label_stoptime = QtGui.QLineEdit(self)
-	self.lineEdit_label_stoptime.setGeometry(QtCore.QRect(120,350,200,22))
+	layout.addWidget(label_stoptime,13,0)
+	layout.addWidget(self.lineEdit_label_stoptime,13,1,1,8)
 
-	self.isFilter = QtGui.QCheckBox(u'当波动大于', self)
-	self.isFilter.setGeometry(QtCore.QRect(25,275,150,22))
-	self.lineEdit_label_var = QtGui.QLineEdit(self)
-	self.lineEdit_label_var.setGeometry(QtCore.QRect(120,275,20,22))
-	label_pct = QtGui.QLabel(u'% 时忽略',self)
-	label_pct.setGeometry(QtCore.QRect(141,275,80,22))
+	layout.addWidget(self.saveButton,15,7)
+	layout.addWidget(self.cancelButton,15,8)
 
+	self.setLayout(layout)
 
     def center(self):
 	screen = QtGui.QDesktopWidget().screenGeometry()
@@ -433,16 +455,6 @@ class ParamWindow(QtGui.QMainWindow):
 	    self.closeFirst.setChecked(True)
 	else :
 	    self.closeFirst.setChecked(False)
-
-	if self.paramters['longMKT'] == True:
-	    self.longMKT.setChecked(True)
-	else:
-	    self.longMKT.setChecked(False)
-
-	if self.paramters['shortMKT'] == True:
-	    self.shortMKT.setChecked(True)
-	else:
-	    self.shortMKT.setChecked(False)
 
 	if self.paramters['isFilter'] == True:
 	    self.isFilter.setChecked(True)
@@ -560,21 +572,10 @@ class ParamWindow(QtGui.QMainWindow):
 	    return
 	self.paramters = self.loadParameter()
 	param["postoday"] = pos
-
 	if self.closeFirst.isChecked():
 	    param['closeFirst'] = True
 	else :
 	    param['closeFirst'] = False
-
-	if self.longMKT.isChecked():
-	    param['longMKT'] = True
-	else :
-	    param['longMKT'] = False
-
-	if self.shortMKT.isChecked():
-	    param['shortMKT'] = True
-	else :
-	    param['shortMKT'] = False
 
 	if self.isFilter.isChecked():
 	    param['isFilter'] = True

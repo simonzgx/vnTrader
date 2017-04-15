@@ -95,27 +95,27 @@ class CtaTemplate(object):
         raise NotImplementedError
     
     #----------------------------------------------------------------------
-    def buy(self, price, volume,vtsymbol, closeFirst,stop=False,price2=None):
+    def buy(self, price, volume,vtsymbol,isMKT=False,stop=False,price2=None):
         """买开"""
-        return self.sendOrder(CTAORDER_BUY, price, volume,vtsymbol, closeFirst,stop)
+        return self.sendOrder(CTAORDER_BUY, price, volume,vtsymbol,isMKT,stop)
     
     #----------------------------------------------------------------------
-    def sell(self, price, volume, vtsymbol, closeFirst, stop=False,price2=None):
+    def sell(self, price, volume, vtsymbol,isMKT=False,  stop=False,price2=None):
         """卖平"""
-        return self.sendOrder(CTAORDER_SELL, price, volume, vtsymbol, closeFirst, stop,price2=None)
+        return self.sendOrder(CTAORDER_SELL, price, volume, vtsymbol,isMKT,  stop,price2=None)
 
     #----------------------------------------------------------------------
-    def short(self, price, volume,vtsymbol, closeFirst, stop=False,price2=None):
+    def short(self, price, volume,vtsymbol,isMKT=False, stop=False,price2=None):
         """卖开"""
-        return self.sendOrder(CTAORDER_SHORT, price, volume, vtsymbol, closeFirst, stop,price2=None)
+        return self.sendOrder(CTAORDER_SHORT, price, volume, vtsymbol,isMKT,  stop,price2=None)
  
     #----------------------------------------------------------------------
-    def cover(self, price, volume, vtsymbol, closeFirst, stop=False,price2=None):
+    def cover(self, price, volume, vtsymbol,isMKT=False, stop=False,price2=None):
         """买平"""
-        return self.sendOrder(CTAORDER_COVER, price, volume,vtsymbol, closeFirst, stop,price2=None)
+        return self.sendOrder(CTAORDER_COVER, price, volume,vtsymbol,isMKT,  stop,price2=None)
         
     #----------------------------------------------------------------------
-    def sendOrder(self, orderType, price, volume, vtsymbol, closeFirst, stop=False,price2=None):
+    def sendOrder(self, orderType, price, volume, vtsymbol,isMKT, stop=False,price2=None):
         """发送委托"""
 
         if self.trading:
@@ -125,9 +125,9 @@ class CtaTemplate(object):
             self.tradeparam['orderType']=orderType
             # 如果stop为True，则意味着发本地停止单
             if stop:
-                vtOrderID = self.ctaEngine.sendStopOrder(vtsymbol, orderType, price, volume, self, closeFirst)
+                vtOrderID = self.ctaEngine.sendStopOrder(vtsymbol, orderType, price, volume, self,isMKT)
             else:
-                vtOrderID = self.ctaEngine.sendOrder(vtsymbol, orderType, price, volume, self, closeFirst)
+                vtOrderID = self.ctaEngine.sendOrder(vtsymbol, orderType, price, volume, self,isMKT)
             return vtOrderID
         else:
             return None        
