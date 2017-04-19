@@ -167,12 +167,9 @@ class CtpAndIB(CtaTemplate):
         if self.shortsymbolAskPrice!=0 and self.longsymbolAskPrice!=0:
             self.dfr = self.shortsymbolBidPrice*self.shortPriceCoe - self.longsymbolAskPrice*self.longPriceCoe        
             self.dfr_2 = self.shortsymbolAskPrice*self.shortPriceCoe - self.longsymbolBidPrice*self.longPriceCoe
-	    if not self.isStart:
-	    	return 
             for i in range(0,len(self.buyPrice)):
 	        if self.buyPrice[i] <= self.dfr and self.postoday[self.shortsymbol]<(i+1)*self.shortBuyUnit :
 		    tradeId = self.short(self.shortsymbolBidPrice-self.shortSlippage,self.shortBuyUnit,self.shortsymbol,self.shortMKT)
-		    
 		    self.postoday[self.shortsymbol] += self.shortBuyUnit
 		    self.saveParameter()
 		if self.buyPrice[i] <= self.dfr and self.postoday[self.longsymbol]<(i+1)*self.longBuyUnit :
@@ -247,7 +244,8 @@ class CtpAndIB(CtaTemplate):
 	if self.isFilter == True:
 	    self.var = param['var']
     def saveParameter(self) :
-
+	if not self.isStart:
+	    return
         param = {}
 	param['closeFirst'] = self.closeFirst
         param["stpProfit"] = self.stpProfit

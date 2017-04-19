@@ -176,8 +176,6 @@ class tradeTest(CtaTemplate):
         if self.shortsymbolAskPrice!=0 and self.longsymbolAskPrice!=0:
             self.dfr = self.shortsymbolBidPrice*self.shortPriceCoe - self.longsymbolAskPrice*self.longPriceCoe        
             self.dfr_2 = self.shortsymbolAskPrice*self.shortPriceCoe - self.longsymbolBidPrice*self.longPriceCoe
-	    if not self.isStart:
-		return
             for i in range(0,len(self.buyPrice)):
 	        if self.buyPrice[i] <= self.dfr and self.postoday[self.shortsymbol]<(i+1)*self.shortBuyUnit :
 		    tradeId = self.short(self.shortsymbolBidPrice-self.slippage, self.shortBuyUnit, self.shortsymbol)
@@ -270,7 +268,8 @@ class tradeTest(CtaTemplate):
 	if self.isFilter == True:
 	    self.var = param['var']
     def saveParameter(self) :
-
+	if not self.isStart:
+	    return
         param = {}
 	param['closeFirst'] = self.closeFirst
         param["stpProfit"] = self.stpProfit
