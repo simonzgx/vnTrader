@@ -16,10 +16,9 @@ from ctaBase import *
 from ctaTemplate import CtaTemplate
 import smtplib
 from uiBasicWidget import *
-
+import re
 import numpy as np
 import datetime
-
 ########################################################################
 class tradeTest(CtaTemplate):
     """策略"""
@@ -117,7 +116,6 @@ class tradeTest(CtaTemplate):
     #----------------------------------------------------------------------
     def onStop(self):
 	self.isStart = False
-	print self.isStart
 	self.filterDic = {}
 	self.loadPosInfo()
         self.saveParameter()
@@ -134,33 +132,8 @@ class tradeTest(CtaTemplate):
     def onTick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
         # 计算K线
-	flag =False
-	now = datetime.datetime.now()
-	if now.hour >= 9 and now.hour <=11 :
-	    flag = True
-	    if now.hour == 11 and now.minute >= 30 :  #  交易时间 9.02 - 11.29
-		flag = False
 
-	    if now.hour == 9 and now.minute <= 1:
-		flag = False
-
-	if now.hour >= 13 and now.hour <= 14:	#交易时间 13.32 - 14.59
-	    flag = True
-	    if now.hour ==13 and now.minute <= 31:
-		flag = False
-
-	if now.hour >=21 and now.hour <= 22:	#交易时间 21.02 - 22.59
-	    flag = True
-	    if now.hour == 21 and now.minute <=1 :
-		flag = False 
-
-	        self.loadPosInfo()
-
-	if now.hour > int(self.stopTime[:2]):
-	    flag = False
-	if now.hour == int(self.stopTime[:2]) and now.minute >= int(self.stopTime[-2:]):
-	    flag = False
-	if not flag:
+	if not self.isTrade():
 	    return
 	if self.isFilter :
 	    if not self.doFilter(tick) :
@@ -198,6 +171,31 @@ class tradeTest(CtaTemplate):
 		    self.postoday[self.longsymbol] -= self.longBuyUnit
 		    self.saveParameter()
         self.putEvent()
+
+    def isTrade(self):
+	
+	h = datetime.datetime.now().hour
+	m = datetime.datetime.now().minute
+	for x in self.tradeTime.keys():
+	    start = x.split(':')
+	    end = self.tradeTime[x].split(':')
+	    if h > int(start[0]) and h < int(end[0]) :
+		return True
+	    elif h == int(start[0]):
+		if int(start[0]) != int(end[0]) :
+		    if m >= int(start[1]) :
+			return True
+		elif  m >= int(start[1]) and m <= int(end[1]) :
+		    return True
+	    elif h == int(end[0]):
+		if int(start[0]) != int(end[0]):
+		    if m <= int(end[1]):
+			return True
+		elif  m >= int(start[1]) and m <= int(end[1]) :
+		    return True
+	return False
+
+
     def doFilter(self, tick):
 	if tick.vtSymbol not in self.filterDic.keys():
 	    self.filterDic[tick.vtSymbol] = {'ask':[], 'bid':[]}
@@ -263,7 +261,7 @@ class tradeTest(CtaTemplate):
         self.shortPriceCoe = param['shortPriceCoe']
         self.longPriceCoe = param['longPriceCoe']
         self.receivers = param['receivers']
-	self.stopTime = param['stoptime']
+	self.tradeTime = param['tradeTime']
 	self.isFilter = param['isFilter']
 	if self.isFilter == True:
 	    self.var = param['var']
@@ -281,7 +279,7 @@ class tradeTest(CtaTemplate):
         param['shortPriceCoe'] = self.shortPriceCoe
         param['longPriceCoe'] = self.longPriceCoe
         param['receivers'] = self.receivers
-	param['stoptime'] = self.stopTime
+	param['tradeTime'] = self.tradeTime
 	param['isFilter'] = self.isFilter
 	if param['isFilter'] == True:
 	    param['var'] = self.var
@@ -289,6 +287,7 @@ class tradeTest(CtaTemplate):
         with open(self.fileName, "w") as f:
             f.write(d1)
 	    f.close()
+
 ########################################################################################
 class ParamWindow(QtGui.QWidget):
     def __init__(self,name=None, longsymbol=None, shortsymbol=None,CtaEngineManager=None):
@@ -312,10 +311,6 @@ class ParamWindow(QtGui.QWidget):
 	self.onInit()
 
     def onInit(self):
-	#self.saveButton.resize(50, 27)
-	#self.cancelButton.resize(50, 27)
-	#self.saveButton.move(220,450)
-	#self.cancelButton.move(280,450)
 	self.saveButton.clicked.connect(self.saveParameter)
 	self.cancelButton.clicked.connect(self.cancel) 
 	self.initLabel()
@@ -353,7 +348,7 @@ class ParamWindow(QtGui.QWidget):
 	layout.addWidget(label_longPriceCoe,3,0)
 	layout.addWidget(self.lineEdit_label_longPriceCoe,3,1,1,3)
 
-	label_longPosition = QtGui.QLabel(u"    当前持仓量", self)
+	label_longPosition = QtGui.QLabel(u"    当前持仓", self)
 	self.lineEdit_label_longPosition = QtGui.QLineEdit(self)
 	layout.addWidget(label_longPosition,4,0)
 	layout.addWidget(self.lineEdit_label_longPosition,4,1,1,3)
@@ -374,7 +369,7 @@ class ParamWindow(QtGui.QWidget):
 	layout.addWidget(label_shortPriceCoe,7,0)
 	layout.addWidget(self.lineEdit_label_shortPriceCoe,7,1,1,3)
 
-	label_shortPosition = QtGui.QLabel(u"   当前持仓量", self)
+	label_shortPosition = QtGui.QLabel(u"   当前持仓", self)
 	self.lineEdit_label_shortPosition = QtGui.QLineEdit(self)
 	layout.addWidget(label_shortPosition,8,0)
 	layout.addWidget(self.lineEdit_label_shortPosition,8,1,1,3)
@@ -405,15 +400,22 @@ class ParamWindow(QtGui.QWidget):
 	layout.addWidget(label_buyPrice,12,0)
 	layout.addWidget(self.lineEdit_label_buyPrice,12,1,1,8)
 
-	label_stoptime = QtGui.QLabel(u"停止时间", self)
-	self.lineEdit_label_stoptime = QtGui.QLineEdit(self)
-	layout.addWidget(label_stoptime,13,0)
-	layout.addWidget(self.lineEdit_label_stoptime,13,1,1,8)
+	self.tradeTimeButton = QtGui.QPushButton(u"交易时间",self)
+	self.tradeTimeButton.clicked.connect(self.tradeTimeWidget)
+	layout.addWidget(self.tradeTimeButton,13,0)
+
 
 	layout.addWidget(self.saveButton,15,7)
 	layout.addWidget(self.cancelButton,15,8)
 
 	self.setLayout(layout)
+
+    def tradeTimeWidget(self):
+	if self.fileName == "":
+	    self.saveParameter()
+	self.st = strategyTimeQWidget(self)
+	self.st.show()
+
 
     def center(self):
 	screen = QtGui.QDesktopWidget().screenGeometry()
@@ -431,7 +433,6 @@ class ParamWindow(QtGui.QWidget):
 	self.lineEdit_label_shortPosition.setText(str(self.paramters["postoday"][self.shortsymbol]))
 	self.lineEdit_label_stpProfit.setText(str(self.paramters["stpProfit"]))
 	self.lineEdit_label_slippage.setText(str(self.paramters["slippage"]))
-	self.lineEdit_label_stoptime.setText(str(self.paramters["stoptime"]))
 
 	if self.paramters['closeFirst'] == True:
 	    self.closeFirst.setChecked(True)
@@ -471,15 +472,16 @@ class ParamWindow(QtGui.QWidget):
 
     def saveParameter(self) :
 	
-	param = {}
+	self.paramters = self.loadParameter()
 	try :
-	    param["stpProfit"] = int(self.lineEdit_label_stpProfit.text())
+	    self.paramters["stpProfit"] = int(self.lineEdit_label_stpProfit.text())
 	except ValueError:
 	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'止赢应该是一个数字！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
 	    return
+
 	try:	
-	    param["slippage"] = int(self.lineEdit_label_slippage.text())
+	    self.paramters["slippage"] = int(self.lineEdit_label_slippage.text())
 	except ValueError:
 	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'滑点应该是一个数字！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
@@ -489,16 +491,24 @@ class ParamWindow(QtGui.QWidget):
 	try:
 	    for x in self.lineEdit_label_buyPrice.text():
 	        if x == ',':
+		    if len(bp) > 0 and int(m) <= bp[-1]:
+			reply = QtGui.QMessageBox.question(self, u'ERROR!',
+                                           u'开仓价应是从小到大的一组数字！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
+	    		return
 		    bp.append(int(m))
 		    m = ''
 		    continue
 	        m += str(x)
+	    if len(bp) > 0 and int(m) <= bp[-1]:
+		reply = QtGui.QMessageBox.question(self, u'ERROR!',
+                                           u'开仓价应是从小到大的一组数字！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
+	    	return
 	    bp.append(int(m))
 	except Exception, e:
 	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'开仓价应是用英文逗号分隔的一组数字！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
 	    return
-	param["buyPrice"] = bp
+	self.paramters["buyPrice"] = bp
 	pos = {}
 	if self.lineEdit_label_longsymbol.text() == '':
 	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
@@ -528,54 +538,47 @@ class ParamWindow(QtGui.QWidget):
                                            u'请正确填写shortsymbol的持仓！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes) 
 	    return
 	try:
-	    param['shortBuyUnit'] = int(self.lineEdit_label_shortBuyUnit.text())
+	    self.paramters['shortBuyUnit'] = int(self.lineEdit_label_shortBuyUnit.text())
 	except ValueError:
-	    print 'test'
 	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'请正确填写shortsymbol开仓手数！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes) 
 	    return
 	try:
-	    param['longBuyUnit'] = int(self.lineEdit_label_longBuyUnit.text())
+	    self.paramters['longBuyUnit'] = int(self.lineEdit_label_longBuyUnit.text())
 	except ValueError:
 	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'请正确填写longsymbol的开仓手数！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes) 
 	    return
 	try:
-	    param['shortPriceCoe'] = int(self.lineEdit_label_shortPriceCoe.text())
+	    self.paramters['shortPriceCoe'] = int(self.lineEdit_label_shortPriceCoe.text())
 	except ValueError:
 	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'请正确填写shortsymbol的系数！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes) 
 	    return
 	try:
-	    param['longPriceCoe'] = int(self.lineEdit_label_longPriceCoe.text())
+	    self.paramters['longPriceCoe'] = int(self.lineEdit_label_longPriceCoe.text())
 	except ValueError:
 	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'请正确填写longsymbol的系数！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes) 
 	    return
-	self.paramters = self.loadParameter()
-	param["postoday"] = pos
+	self.paramters["postoday"] = pos
 	if self.closeFirst.isChecked():
-	    param['closeFirst'] = True
+	    self.paramters['closeFirst'] = True
 	else :
-	    param['closeFirst'] = False
+	    self.paramters['closeFirst'] = False
 
 	if self.isFilter.isChecked():
-	    param['isFilter'] = True
+	    self.paramters['isFilter'] = True
 	else :
-	    param['isFilter'] = False
+	    self.paramters['isFilter'] = False
 	if self.isFilter.isChecked():
 	    try :
-	        param["var"] = int(self.lineEdit_label_var.text())
+	        self.paramters["var"] = int(self.lineEdit_label_var.text())
 	    except ValueError:
 	        reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'波动率应该是一个数字！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
 	        return
 
-	stpTime = str(self.lineEdit_label_stoptime.text())
-	if stpTime == "":
-	    param['stoptime'] = '9999'
-	else :
-	    param['stoptime'] = stpTime
 	rec = []
 	m = ""
 	for x in str(self.lineEdit_label_mail.text()):
@@ -586,11 +589,12 @@ class ParamWindow(QtGui.QWidget):
 	    m += x
 	if m != '':
 	    rec.append(m)
-	param['receivers'] = rec
+	self.paramters['receivers'] = rec
 	if self.name == "" and self.firstSave:
-	    if self.strategyname_label.text() == '':
+	    name = self.strategyname_label.text()
+	    if re.match(r'\W', name):
 	        reply = QtGui.QMessageBox.question(self, u'ERROR!',
-                                           u'策略名不能为空！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
+                                           u'策略名应是英文字母和数字！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
 		return
 	    else :
 	        self.strategyName = self.strategyname_label.text()
@@ -598,8 +602,12 @@ class ParamWindow(QtGui.QWidget):
 	    with open(self.fileName, 'a') as f:
 		f.write("{}")
 		f.close()
-	self.paramters = param
-	d1 = json.dumps(param,sort_keys=True,indent=4)
+	if 'tradeTime' not in self.paramters.keys():
+	    self.paramters['tradeTime'] = {}
+	self.saveP()
+
+    def saveP(self):
+	d1 = json.dumps(self.paramters,sort_keys=True,indent=4)
 
 	with open(self.fileName, "w") as f:
 	    
@@ -613,3 +621,153 @@ class ParamWindow(QtGui.QWidget):
 	if self.name == "" and self.firstSave :
 	    self.ce.ctaEngine.addStrategy(self.setting,self.strategyName)
 	    self.firstSave = False
+
+class myButton(QtGui.QPushButton):
+
+    def __init__(self, tag, name, buttonType, strategyTimeQWidget, parent):
+	super(myButton, self).__init__(tag)
+	self.name = str(name)
+	if buttonType == 'del':
+	    self.clicked.connect(self.delButtonOnClick)
+	else :
+	    self.clicked.connect(self.addButtonOnClick)
+	self.st = strategyTimeQWidget
+	self.parent = parent
+    def delButtonOnClick(self):
+
+	if str(self.name) in self.st.startTime:
+	    self.st.startTime.remove(self.name)
+	if self.name in self.st.timeDict.keys():
+	    self.st.timeDict.pop(self.name)
+	
+	self.st.pw.paramters['tradeTime'] = self.st.timeDict
+	d1 = json.dumps(self.st.pw.paramters,sort_keys=True,indent=4)
+	with open(self.st.fileName, "w") as f:
+	    
+	    f.write(d1)
+	    f.close()
+	self.st.delTime(self.parent)
+
+    def addButtonOnClick(self):
+	start = str(self.st.hourCheckBox.currentText() +':'+ self.st.minuteCheckBox.currentText())
+	end = str(self.st.hourCheckBox1.currentText() +':'+ self.st.minuteCheckBox1.currentText())
+	self.st.startTime.append(start)
+	self.st.timeDict[start] = end
+	self.st.pw.paramters['tradeTime'] = self.st.timeDict
+	d1 = json.dumps(self.st.pw.paramters,sort_keys=True,indent=4)
+	with open(self.st.fileName, "w") as f:
+	    
+	    f.write(d1)
+	    f.close()
+	self.st.delTime(self.parent)
+	self.st.addTime(start,end)
+
+
+
+class strategyTimeQWidget(QtGui.QWidget):
+    def __init__(self, paramWindow):
+	super(strategyTimeQWidget,self).__init__()
+	self.pw = paramWindow
+	self.fileName = self.pw.fileName
+	if 'tradeTime' in self.pw.paramters.keys():
+
+	    self.startTime = self.pw.paramters['tradeTime'].keys()
+	    self.timeDict = self.pw.paramters['tradeTime']
+	else :
+	    self.pw.paramters['tradeTime'] = {}
+	    self.startTime = self.pw.paramters['tradeTime'].keys()
+	    self.timeDict = self.pw.paramters['tradeTime']
+	self.initUI()
+	
+    def initUI(self):
+	self.resize(350, 510)
+	self.center()
+	self.setWindowTitle(u"交易时间")
+	self.loadTime()   
+
+
+    def loadTime(self):
+	vbox1 = QtGui.QVBoxLayout()
+	for x in self.startTime:	
+	    newTable = QtGui.QTableWidget(1,3)
+	    newTable.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers) 
+	    newTable.setMaximumHeight(60)
+	    newTable.setHorizontalHeaderLabels([u'time', u"start", u"end"])
+	    delButton = myButton(u"del",str(x), 'del', self, newTable)
+            newTable.setCellWidget(0,0,delButton)
+            newItem = QtGui.QTableWidgetItem(str(x))  
+            newTable.setItem(0, 1, newItem)
+            newItem = QtGui.QTableWidgetItem(str(self.timeDict[x]))  
+            newTable.setItem(0, 2, newItem)
+	    vbox1.addWidget(newTable)
+
+	self.vbox = vbox1
+	self.createAddButton()
+	self.setLayout(self.vbox)
+
+    def addTime(self, start, end):
+	newTable = QtGui.QTableWidget(1,3)
+	newTable.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers) 
+	newTable.setMaximumHeight(60)
+	newTable.setHorizontalHeaderLabels([u'time', u"start", u"end"])
+	delButton = myButton(u"del",str(start), 'del', self, newTable)
+	newTable.setCellWidget(0,0,delButton)
+	newItem = QtGui.QTableWidgetItem(start)  
+	newTable.setItem(0, 1, newItem)
+	newItem = QtGui.QTableWidgetItem(end)  
+	newTable.setItem(0, 2, newItem)
+	self.vbox.addWidget(newTable)
+	self.createAddButton()
+
+
+    def delTime(self,m):
+	childList = self.vbox.children()
+	self.vbox.removeWidget(m)
+	m.setMaximumHeight(0)
+
+    def createAddButton(self):
+	self.addTable = QtGui.QTableWidget(2,3)
+	self.addTable.setMaximumHeight(105)
+	self.addTable.setHorizontalHeaderLabels([u'time', u"start", u"end"])
+	delButton = myButton(u"add",'', 'add', self, self.addTable)
+	self.addTable.setCellWidget(0,0,delButton)
+	self.addTable.setSpan(0, 0, 2, 1)
+	self.hourCheckBox = QtGui.QComboBox()
+	self.hourCheckBox.setMaxVisibleItems(10)
+	self.hourCheckBox1 = QtGui.QComboBox()
+	self.hourCheckBox1.setMaxVisibleItems(10)
+	for x in range(0,24):
+	    self.hourCheckBox.addItem(str(x))
+	    self.hourCheckBox1.addItem(str(x))
+	self.addTable.setCellWidget(0,1,self.hourCheckBox)
+	self.addTable.setCellWidget(0,2,self.hourCheckBox1)
+	self.minuteCheckBox = QtGui.QComboBox()
+	self.minuteCheckBox.setMaxVisibleItems(10)
+	self.minuteCheckBox1 = QtGui.QComboBox()
+	self.minuteCheckBox1.setMaxVisibleItems(10)
+	for x in range(0,60):
+	    self.minuteCheckBox.addItem(str(x))
+	    self.minuteCheckBox1.addItem(str(x))
+
+	self.addTable.setCellWidget(1,1,self.minuteCheckBox)
+	self.addTable.setCellWidget(1,2,self.minuteCheckBox1)
+	self.vbox.addWidget(self.addTable)
+
+
+    #----------------------------------------------------------------------
+    def createAction(self, actionName, function):
+        action = QtGui.QAction(actionName, self)
+        action.triggered.connect(function)
+        return action
+
+
+    def center(self):
+	screen = QtGui.QDesktopWidget().screenGeometry()
+	size = self.geometry()
+	self.move((screen.width() - size.width())/2, (screen.height() - size.height())/2)
+
+
+
+
+
+

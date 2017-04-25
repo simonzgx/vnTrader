@@ -6,6 +6,7 @@
 
 from ctaBase import *
 from vtConstant import *
+import re
 import json
 
 ########################################################################

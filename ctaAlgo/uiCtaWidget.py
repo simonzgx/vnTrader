@@ -12,6 +12,11 @@ from strategyGirdTrading import ParamWindow2
 from CtpAndIB import ParamWindow3
 import json
 import os
+
+#========================================================================
+
+
+
 #========================================================================
 class strategyWindow(QtGui.QMainWindow):
 
@@ -81,7 +86,6 @@ class CtaValueMonitor(QtGui.QTableWidget):
         self.setRowCount(1)
         self.verticalHeader().setVisible(False)
         self.setEditTriggers(self.NoEditTriggers)
-        
         self.setMaximumHeight(self.sizeHint().height())
         
     #----------------------------------------------------------------------
@@ -135,33 +139,26 @@ class CtaStrategyManager(QtGui.QGroupBox):
         
         self.paramMonitor = CtaValueMonitor(self)
         self.varMonitor = CtaValueMonitor(self)
-        
         maxHeight = 60
         self.paramMonitor.setMaximumHeight(maxHeight)
-        self.varMonitor.setMaximumHeight(maxHeight)
-        
+        self.varMonitor.setMaximumHeight(maxHeight)  
         buttonInit = QtGui.QPushButton(u'初始化')
         buttonStart = QtGui.QPushButton(u'启动')
         buttonStop = QtGui.QPushButton(u'停止')
 	buttonParam = QtGui.QPushButton(u'参数')
 	buttonDelete = QtGui.QPushButton(u'删除')
 	buttonDelete.clicked.connect(self.delete)
-	#updateInfo = QtGui.QPushButton(u'更新缓存')
-	#buttonPosition = QtGui.QPushButton(u'重置今持仓')
         buttonInit.clicked.connect(self.init)
         buttonStart.clicked.connect(self.start)
         buttonStop.clicked.connect(self.stop)
         buttonParam.clicked.connect(self.param)
-	#updateInfo.clicked.connect(self.update)
-	#buttonPosition.clicked.connect(self.position)
         hbox1 = QtGui.QHBoxLayout()     
         hbox1.addWidget(buttonInit)
         hbox1.addWidget(buttonStart)
         hbox1.addWidget(buttonStop)
 	hbox1.addWidget(buttonParam)
 	hbox1.addWidget(buttonDelete)
-	#hbox1.addWidget(updateInfo)
-	#hbox1.addWidget(buttonPosition)
+
         hbox1.addStretch()
         
         hbox2 = QtGui.QHBoxLayout()
@@ -183,11 +180,11 @@ class CtaStrategyManager(QtGui.QGroupBox):
         paramDict = self.ctaEngine.getStrategyParam(self.name)
         if paramDict:
             self.paramMonitor.updateData(paramDict)
-            
+            self.paramMonitor.setColumnWidth(3,300) 
         varDict = self.ctaEngine.getStrategyVar(self.name)
         if varDict:
             self.varMonitor.updateData(varDict)        
-            
+            self.varMonitor.setColumnWidth(3,300) 
     #----------------------------------------------------------------------
     def registerEvent(self):
         """注册事件监听"""
@@ -259,7 +256,7 @@ class CtaEngineManager(QtGui.QWidget):
 	self.pw = ParamWindow("","","",self)
 	self.gt = ParamWindow2("","","",self)
 	self.cai = ParamWindow3("","","",self)
-        self.sw = strategyWindow(self.pw, self.gt,self.cai)
+        #self.sw = strategyWindow(self.pw, self.gt,self.cai)
         self.initUi()
         self.registerEvent()
         # 记录日志
@@ -348,7 +345,10 @@ class CtaEngineManager(QtGui.QWidget):
     #----------------------------------------------------------------------
     
     def addStrategy(self):
-
+	self.pw = ParamWindow("","","",self)
+	self.gt = ParamWindow2("","","",self)
+	self.cai = ParamWindow3("","","",self)
+	self.sw = strategyWindow(self.pw, self.gt,self.cai)
 	self.sw.show()
  
 

@@ -7,11 +7,68 @@ from ctaAlgo.uiCtaWidget import CtaEngineManager
 from dataRecorder.uiDrWidget import DrEngineManager
 from riskManager.uiRmWidget import RmEngineManager
 
-########################################################################
-class connectWindow(QtGui.QDialog):
+
+class connectIBWindow(QtGui.QDialog):
 
     def __init__(self,mainEngine):
-#	super(connectWindow, self).__init__()
+	super(connectIBWindow,self).__init__()
+	self.mainEngine = mainEngine
+	self.fileName = 'ibGateway/IB_connect.json'
+	self.port = QtGui.QLabel(u'port', self)
+	self.clientId = QtGui.QLabel(u'clientId', self)
+	self.accountCode = QtGui.QLabel(u'accountCode', self)
+	self.portEdit = QtGui.QLineEdit(self)
+	self.clientIdEdit = QtGui.QLineEdit(self)
+	self.accountCodeEdit = QtGui.QLineEdit(self)
+	self.connectButton = QtGui.QPushButton(u"连接",self)
+	self.connectButton.clicked.connect(self.connect)
+	self.initUI()
+
+    def showParam(self):
+	
+	self.dic = {}
+	with open(self.fileName, 'r') as f:
+	    self.dic = json.load(f)
+	self.clientIdEdit.setText(str(self.dic['clientId']))
+	self.accountCodeEdit.setText(str(self.dic['accountCode']))
+	self.portEdit.setText(str(self.dic['port']))
+
+    def connect(self):
+	self.dic['clientId'] = str(self.clientIdEdit.text())
+	self.dic['accountCode'] = str(self.accountCodeEdit.text())
+	self.dic['port'] = str(self.portEdit.text())
+	d = json.dumps(self.dic,sort_keys=True,indent=4)
+	with open(self.fileName, 'w') as f:
+	    f.write(d)
+	    f.close()
+	self.mainEngine.connect("IB")
+
+    def initUI(self):
+	self.resize(380,160)
+	self.center()
+	layout = QtGui.QGridLayout()
+	layout.addWidget(self.port,0,0)
+	layout.addWidget(self.portEdit,0,1,1,2)
+	layout.addWidget(self.clientId,1,0)
+	layout.addWidget(self.clientIdEdit,1,1,1,2)	
+	layout.addWidget(self.accountCode,2,0)
+	layout.addWidget(self.accountCodeEdit,2,1,1,2)
+	layout.addWidget(self.connectButton,3,1)
+	self.setLayout(layout)		
+	self.showParam()
+
+    def center(self):
+	screen = QtGui.QDesktopWidget().screenGeometry()
+	size = self.geometry()
+	self.move((screen.width() - size.width())/2, (screen.height() - size.height())/2)
+
+
+
+
+########################################################################
+class connectCTPWindow(QtGui.QDialog):
+
+    def __init__(self,mainEngine):
 	QtGui.QWidget.__init__(self, parent=None)
 	self.mainEngine = mainEngine
 	self.userID = QtGui.QLabel(u'帐号', self)
@@ -252,10 +309,13 @@ class MainWindow(QtGui.QMainWindow):
         if gatewayName not in self.mainEngine.getAllGatewayNames():
             return
         if gatewayName == 'CTP':
-	        def connect():
-#	       	    self.mainEngine.connect('CTP')
-	    	    self.connectWindow = connectWindow(self.mainEngine)
-		    self.connectWindow.show()
+	    def connect():
+	    	self.connectWindow = connectCTPWindow(self.mainEngine)
+		self.connectWindow.show()
+	elif gatewayName == "IB":
+	    def connect():
+	    	self.connectWindow = connectIBWindow(self.mainEngine)
+		self.connectWindow.show()
 	else :
             def connect():
                 self.mainEngine.connect(gatewayName)
