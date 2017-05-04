@@ -146,9 +146,11 @@ class tradeTest(CtaTemplate):
         else :
             self.longsymbolAskPrice = tick.askPrice1
             self.longsymbolBidPrice = tick.bidPrice1
-        if self.shortsymbolAskPrice!=0 and self.longsymbolAskPrice!=0:
-            self.dfr = self.shortsymbolBidPrice*self.shortPriceCoe - self.longsymbolAskPrice*self.longPriceCoe        
-            self.dfr_2 = self.shortsymbolAskPrice*self.shortPriceCoe - self.longsymbolBidPrice*self.longPriceCoe
+        self.dfr = self.shortsymbolBidPrice*self.shortPriceCoe - self.longsymbolAskPrice*self.longPriceCoe        
+        self.dfr_2 = self.shortsymbolAskPrice*self.shortPriceCoe - self.longsymbolBidPrice*self.longPriceCoe
+	if tick.askPrice1 == tick.lowerLimit or tick.bidPrice1 == tick.upperLimit:
+	    return 
+        if self.shortsymbolAskPrice!=0 and self.longsymbolAskPrice!=0 and self.shortsymbolBidPrice!=0 and self.longsymbolBidPrice!=0:
             for i in range(0,len(self.buyPrice)):
 	        if self.buyPrice[i] <= self.dfr and self.postoday[self.shortsymbol]<(i+1)*self.shortBuyUnit :
 		    tradeId = self.short(self.shortsymbolBidPrice-self.slippage, self.shortBuyUnit, self.shortsymbol)
