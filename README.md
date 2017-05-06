@@ -17,7 +17,7 @@ some changes based on an existing open source projects--VNPY
   
   4.现在的CTP IB 双接口策略暂时保留,待测试完成后会删除
   
-# 20170411 更新CTP&IB双接口套利策略模板 1.0.1
+# 20170425 更新CTP&IB双接口套利策略模板 1.0.1
 
   1.重做了策略参数界面，由原来的固定位置改为GirdLayout
   
@@ -31,7 +31,7 @@ some changes based on an existing open source projects--VNPY
   
   6.对于CTPgateway 修改了持仓查询，报单查询，委托查询等代码的实现方法
   
-# 20170411 更新CTP&IB双接口套利策略模板 1.1.0
+# 20170504 更新CTP&IB双接口套利策略模板 1.1.0
   
   1. 增加了ctaTradeTest 和 CtpAndIB 两个策略模块的时间控制模块
   
