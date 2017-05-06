@@ -120,9 +120,6 @@ class strategyGirdTrading(CtaTemplate):
     #----------------------------------------------------------------------
     def onTick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
-        # 计算K线
-	if not self.isTrade():
-	    return
 	if self.isFilter :
 	    if not self.doFilter(tick) :
 		return
@@ -131,6 +128,8 @@ class strategyGirdTrading(CtaTemplate):
 	self.curPrice = tick.bidPrice1
 	self.BidPrice = tick.bidPrice1
 	self.AskPrice = tick.askPrice1
+	if not self.isTrade():
+	    return
 	if tick.askPrice1 == tick.lowerLimit or tick.bidPrice1 == tick.upperLimit:
 	    return 
 	if self.isStop :
@@ -250,7 +249,6 @@ class strategyGirdTrading(CtaTemplate):
 	self.closeFirst = param['closeFirst']
         self.openUnit = param['openUnit']
 	self.direction = param['direction']
-        self.PriceCoe = param['PriceCoe']
         self.receivers = param['receivers']
 	self.tradeTime = param['tradeTime']
 	self.isStop = param['isStop']
@@ -269,7 +267,6 @@ class strategyGirdTrading(CtaTemplate):
         param["postoday"] = self.postoday
         param['openUnit'] = self.openUnit
 	param['direction'] = self.direction
-        param['PriceCoe'] = self.PriceCoe
         param['receivers'] = self.receivers
 	param['tradeTime'] = self.tradeTime
 	param['isStop'] = self.isStop
@@ -283,11 +280,11 @@ class strategyGirdTrading(CtaTemplate):
             f.write(d1)
 	    f.close()
 ########################################################################################
-class ParamWindow2(QtGui.QDialog):
+class ParamWindow2(QtGui.QWidget):
 
     def __init__(self,name=None, direction=None, vtSymbol=None, CtaEngineManager=None):
 	super(ParamWindow2,self).__init__()
-	self.resize(350, 480)
+	self.resize(365, 500)
 	self.ce = CtaEngineManager
 	self.saveButton = QtGui.QPushButton(u"保存",self)
 	self.cancelButton = QtGui.QPushButton(u"取消",self)
@@ -306,8 +303,6 @@ class ParamWindow2(QtGui.QDialog):
     def onInit(self):
 	self.saveButton.resize(50, 27)
 	self.cancelButton.resize(50, 27)
-	self.saveButton.move(220,450)
-	self.cancelButton.move(280,450)
 	self.saveButton.clicked.connect(self.saveParameter)
 	self.cancelButton.clicked.connect(self.cancel) 
 	self.initLabel()
@@ -315,79 +310,82 @@ class ParamWindow2(QtGui.QDialog):
 	if self.fileName != "":
 	    self.showParam()
     def initLabel(self):
+	layout = QtGui.QGridLayout()
+	layout.setSpacing(4)
+	for j in range(0,9):
+	    layout.addWidget(QtGui.QLabel("    ",self),0,j)
+	for i in range(0,16):
+	    layout.addWidget(QtGui.QLabel(" ",self),i,0)
+
 	if self.name == "":
 	    strategyname_label = QtGui.QLabel(u"策略名",self)
-	    strategyname_label.setGeometry(QtCore.QRect(25,25,70,22))
 	    self.strategyname_label = QtGui.QLineEdit(self)
-	    self.strategyname_label.setGeometry(QtCore.QRect(120,25,70,22))
+	    layout.addWidget(strategyname_label,0,0)
+	    layout.addWidget(self.strategyname_label,0,1,1,3)
 
 	self.closeFirst = QtGui.QCheckBox(u'平仓优先',self)
-	self.closeFirst.setGeometry(QtCore.QRect(210,25,90,22))
+	layout.addWidget(self.closeFirst,0,5,1,7)
 
 	label_symbol = QtGui.QLabel(u"合约",self)
-	label_symbol.setGeometry(QtCore.QRect(25,50,70,22))
 	self.lineEdit_label_symbol = QtGui.QLineEdit(self)
-	self.lineEdit_label_symbol.setGeometry(QtCore.QRect(120,50,70,22))
+	layout.addWidget(self.lineEdit_label_symbol,1,1,1,3)
+	layout.addWidget(label_symbol,1,0)
 
 	symbolDirection = QtGui.QLabel(u"方向",self)
-	symbolDirection.setGeometry(QtCore.QRect(210,50,70,22))
 	self.directionCombo = QtGui.QComboBox(self)
 	self.directionCombo.addItem("")
 	self.directionCombo.addItem("long")
 	self.directionCombo.addItem('short')
-	self.directionCombo.setGeometry(QtCore.QRect(245,50,50,22))
+	layout.addWidget(symbolDirection,1,5,1,1)
+	layout.addWidget(self.directionCombo,1,7,1,2)
 
 	label_longBuyUnit = QtGui.QLabel(u"每笔数量",self)
-	label_longBuyUnit.setGeometry(QtCore.QRect(25,75,50,22))
 	self.lineEdit_label_longBuyUnit = QtGui.QLineEdit(self)
-	self.lineEdit_label_longBuyUnit.setGeometry(QtCore.QRect(120,75,70,22))
-
-	maxStpLos = QtGui.QLabel(u'止损', self)
-	maxStpLos.setGeometry(QtCore.QRect(210,75,70,22))
-	self.lineEdit_label_maxStpLos = QtGui.QLineEdit(self)
-	self.lineEdit_label_maxStpLos.setGeometry(QtCore.QRect(245,75,60,22))
-
-	label_longPriceCoe = QtGui.QLabel(u"价格系数",self)
-	label_longPriceCoe.setGeometry(QtCore.QRect(25,100,50,22))
-	self.lineEdit_label_longPriceCoe = QtGui.QLineEdit(self)
-	self.lineEdit_label_longPriceCoe.setGeometry(QtCore.QRect(120,100,70,22))
+	layout.addWidget(label_longBuyUnit,2,0)
+	layout.addWidget(self.lineEdit_label_longBuyUnit,2,1,1,3)
 
 	label_longPosition = QtGui.QLabel(u"当前持仓量", self)
-	label_longPosition.setGeometry(QtCore.QRect(25,125,50,22))
 	self.lineEdit_label_longPosition = QtGui.QLineEdit(self)
-	self.lineEdit_label_longPosition.setGeometry(QtCore.QRect(120,125,70,22))
+	layout.addWidget(label_longPosition,3,0)
+	layout.addWidget(self.lineEdit_label_longPosition,3,1,1,3)
 
+	maxStpLos = QtGui.QLabel(u'止损', self)
+	self.lineEdit_label_maxStpLos = QtGui.QLineEdit(self)
+	layout.addWidget(maxStpLos,4,0)
+	layout.addWidget(self.lineEdit_label_maxStpLos,4,1,1,3)
 
 	label_stpProfit = QtGui.QLabel(u"止赢", self)
-	label_stpProfit.setGeometry(QtCore.QRect(25,150,50,22))
 	self.lineEdit_label_stpProfit = QtGui.QLineEdit(self)
-	self.lineEdit_label_stpProfit.setGeometry(QtCore.QRect(120,150,70,22))
+	layout.addWidget(label_stpProfit,5,0)
+	layout.addWidget(self.lineEdit_label_stpProfit,5,1,1,3)
 
 	label_slippage = QtGui.QLabel(u"滑点", self)
-	label_slippage.setGeometry(QtCore.QRect(25,175,50,22))
 	self.lineEdit_label_slippage = QtGui.QLineEdit(self)
-	self.lineEdit_label_slippage.setGeometry(QtCore.QRect(120,175,70,22))
+	layout.addWidget(label_slippage,6,0)
+	layout.addWidget(self.lineEdit_label_slippage,6,1,1,3)
+
+	self.isFilter = QtGui.QCheckBox(u'波动', self)
+	self.lineEdit_label_var = QtGui.QLineEdit(self)
+	layout.addWidget(self.isFilter,7,0)
+	layout.addWidget(self.lineEdit_label_var,7,1,1,3)
 
 	label_mail = QtGui.QLabel(u"邮箱", self)
-	label_mail.setGeometry(QtCore.QRect(25,200,50,22))
 	self.lineEdit_label_mail = QtGui.QLineEdit(self)
-	self.lineEdit_label_mail.setGeometry(QtCore.QRect(120,200,200,22))
+	layout.addWidget(label_mail,8,0)
+	layout.addWidget(self.lineEdit_label_mail,8,1,1,8)
 
 	label_buyPrice = QtGui.QLabel(u"开仓价差", self)
-	label_buyPrice.setGeometry(QtCore.QRect(25,225,50,22))
 	self.lineEdit_label_buyPrice = QtGui.QLineEdit(self)
-	self.lineEdit_label_buyPrice.setGeometry(QtCore.QRect(120,225,200,22))
+	layout.addWidget(label_buyPrice,9,0)
+	layout.addWidget(self.lineEdit_label_buyPrice,9,1,1,8)
 
-	self.label_stoptime = QtGui.QPushButton(u"交易时间", self)
-	self.label_stoptime.setGeometry(QtCore.QRect(25,250,150,26))
-	self.label_stoptime.clicked.connect(self.tradeTimeWidget)
+	self.tradeTimeButton = QtGui.QPushButton(u"交易时间", self)
+	self.tradeTimeButton.clicked.connect(self.tradeTimeWidget)
+	layout.addWidget(self.tradeTimeButton,10,0)
 
-	self.isFilter = QtGui.QCheckBox(u'当波动大于', self)
-	self.isFilter.setGeometry(QtCore.QRect(25,275,150,22))
-	self.lineEdit_label_var = QtGui.QLineEdit(self)
-	self.lineEdit_label_var.setGeometry(QtCore.QRect(120,275,20,22))
-	label_pct = QtGui.QLabel(u'% 时忽略',self)
-	label_pct.setGeometry(QtCore.QRect(141,275,80,22))
+	layout.addWidget(self.saveButton,15,7)
+	layout.addWidget(self.cancelButton,15,8)
+	self.setLayout(layout)
 
     def tradeTimeWidget(self):
 	if self.fileName == "":
@@ -403,7 +401,6 @@ class ParamWindow2(QtGui.QDialog):
     def showParam(self):
 	self.lineEdit_label_symbol.setText(self.vtSymbol)
 	self.lineEdit_label_longBuyUnit.setText(str(self.paramters["openUnit"]))
-	self.lineEdit_label_longPriceCoe.setText(str(self.paramters["PriceCoe"]))
 	self.lineEdit_label_longPosition.setText(str(self.paramters["postoday"][self.vtSymbol]))
 	self.lineEdit_label_stpProfit.setText(str(self.paramters["stpProfit"]))
 	self.lineEdit_label_slippage.setText(str(self.paramters["slippage"]))
@@ -518,12 +515,6 @@ class ParamWindow2(QtGui.QDialog):
 	    return
 
 
-	try:
-	    self.paramters['PriceCoe'] = int(self.lineEdit_label_longPriceCoe.text())
-	except ValueError:
-	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
-                                           u'请正确填写symbol的系数！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes) 
-	    return
 	rec = []
 	m = ""
 	for x in str(self.lineEdit_label_mail.text()):
