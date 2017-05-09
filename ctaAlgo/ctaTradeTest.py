@@ -132,7 +132,8 @@ class tradeTest(CtaTemplate):
     def onTick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
         # 计算K线
-
+	if not self.isTrade():
+	    return
 	if self.isFilter :
 	    if not self.doFilter(tick) :
 		return
@@ -148,8 +149,6 @@ class tradeTest(CtaTemplate):
         self.dfr_2 = self.shortsymbolAskPrice*self.shortPriceCoe - self.longsymbolBidPrice*self.longPriceCoe
 	if tick.askPrice1 == tick.lowerLimit or tick.bidPrice1 == tick.upperLimit:
 	    return 
-	if not self.isTrade():
-	    return
         if self.shortsymbolAskPrice!=0 and self.longsymbolAskPrice!=0 and self.shortsymbolBidPrice!=0 and self.longsymbolBidPrice!=0:
             for i in range(0,len(self.buyPrice)):
 	        if self.buyPrice[i] <= self.dfr and self.postoday[self.shortsymbol]<(i+1)*self.shortBuyUnit :

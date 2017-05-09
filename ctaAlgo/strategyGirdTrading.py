@@ -124,12 +124,11 @@ class strategyGirdTrading(CtaTemplate):
 	    if not self.doFilter(tick) :
 		return
         tickMinute = tick.datetime.minute   #by hw
-
+	if not self.isTrade():
+	    return
 	self.curPrice = tick.bidPrice1
 	self.BidPrice = tick.bidPrice1
 	self.AskPrice = tick.askPrice1
-	if not self.isTrade():
-	    return
 	if tick.askPrice1 == tick.lowerLimit or tick.bidPrice1 == tick.upperLimit:
 	    return 
 	if self.isStop :
