@@ -89,6 +89,9 @@ class tradeTest(CtaTemplate):
 	self.isStart = False
         self.dfr = 0
         self.dfr_2 = 0
+	self.longCheckList = []
+	self.shortCheckList = []
+	self.second = -1
     #----------------------------------------------------------------------
     def onInit(self):
 	self.loadPosInfo()
@@ -115,12 +118,13 @@ class tradeTest(CtaTemplate):
     
     #----------------------------------------------------------------------
     def onStop(self):
-	self.isStart = False
+	self.isSatrt = False
 	self.filterDic = {}
 	self.loadPosInfo()
         self.saveParameter()
         """停止策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'macdpbx策略停止')
+	log = self.name + u'策略停止'
+        self.writeCtaLog(log)
         self.putEvent()
     #----------------------------------------------------------------------
     def onOrder(self, order):
@@ -132,11 +136,18 @@ class tradeTest(CtaTemplate):
     def onTick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
         # 计算K线
+	
 	if not self.isTrade():
 	    return
 	if self.isFilter :
 	    if not self.doFilter(tick) :
 		return
+	now = datetime.datetime.now()
+	if self.second != now.second:
+	    self.second = now.second
+	    self.longCheckList = []
+	    self.shortCheckList = []
+
 
 #2016/11/21=============================================================
         if tick.vtSymbol==self.shortsymbol :
@@ -147,26 +158,57 @@ class tradeTest(CtaTemplate):
             self.longsymbolBidPrice = tick.bidPrice1
         self.dfr = self.shortsymbolBidPrice*self.shortPriceCoe - self.longsymbolAskPrice*self.longPriceCoe        
         self.dfr_2 = self.shortsymbolAskPrice*self.shortPriceCoe - self.longsymbolBidPrice*self.longPriceCoe
+	if not self.isStart:
+	    self.putEvent()
+	    return
 	if tick.askPrice1 == tick.lowerLimit or tick.bidPrice1 == tick.upperLimit:
 	    return 
         if self.shortsymbolAskPrice!=0 and self.longsymbolAskPrice!=0 and self.shortsymbolBidPrice!=0 and self.longsymbolBidPrice!=0:
             for i in range(0,len(self.buyPrice)):
 	        if self.buyPrice[i] <= self.dfr and self.postoday[self.shortsymbol]<(i+1)*self.shortBuyUnit :
+		    if i in self.shortCheckList:
+			logs = u'策略' + self.name + u'在1秒内重复开单 ' + self.shortsymbol + u'停止运行！'
+			self.isStart = False
+			self.writeCtaLog(logs)
+			return
+		    else :
+			self.shortCheckList.append(i)
 		    tradeId = self.short(self.shortsymbolBidPrice-self.slippage, self.shortBuyUnit, self.shortsymbol)
 		    
 		    self.postoday[self.shortsymbol] += self.shortBuyUnit
 		    self.saveParameter()
 		if self.buyPrice[i] <= self.dfr and self.postoday[self.longsymbol]<(i+1)*self.longBuyUnit :
+		    if i in self.longCheckList:
+			logs = u'策略' + self.name + u'在1秒内重复开单 ' + self.longsymbol + u'停止运行！'
+			self.isStart = False
+			self.writeCtaLog(logs)
+			return
+		    else :
+			self.shortCheckList.append(i)
 		    tradeId = self.buy(self.longsymbolAskPrice+self.slippage, self.longBuyUnit, self.longsymbol)
 		    
 		    self.postoday[self.longsymbol] += self.longBuyUnit
 		    self.saveParameter()
-	        if self.dfr_2 <= self.buyPrice[i] - self.stpProfit and self.postoday[self.shortsymbol]> i*self.shortBuyUnit :	
+	        if self.dfr_2 <= self.buyPrice[i] - self.stpProfit and self.postoday[self.shortsymbol]> i*self.shortBuyUnit :
+		    if i in self.shortCheckList:
+			logs = u'策略' + self.name + u'在1秒内重复开单 ' + self.shortsymbol + u'停止运行！'
+			self.isStart = False
+			self.writeCtaLog(logs)
+			return
+		    else :
+			self.shortCheckList.append(i)	
 		    tradeId = self.cover(self.shortsymbolAskPrice+self.slippage, self.shortBuyUnit, self.shortsymbol)
 		    
 		    self.postoday[self.shortsymbol] -= self.shortBuyUnit
 		    self.saveParameter()
 		if self.dfr_2 <= self.buyPrice[i] - self.stpProfit and self.postoday[self.longsymbol]> i*self.longBuyUnit :
+		    if i in self.longCheckList:
+			logs = u'策略' + self.name + u'在1秒内重复开单 ' + self.longsymbol + u'停止运行！'
+			self.isStart = False
+			self.writeCtaLog(logs)
+			return
+		    else :
+			self.shortCheckList.append(i)
 		    tradeId = self.sell(self.longsymbolBidPrice-self.slippage, self.longBuyUnit, self.longsymbol)
 		    
 		    self.postoday[self.longsymbol] -= self.longBuyUnit
@@ -203,7 +245,7 @@ class tradeTest(CtaTemplate):
 	self.filterDic[tick.vtSymbol]['ask'].append(tick.askPrice1)
 	self.filterDic[tick.vtSymbol]['bid'].append(tick.bidPrice1)
 
-	if len(self.filterDic[tick.vtSymbol]['bid'] <= 10):
+	if len(self.filterDic[tick.vtSymbol]['bid']) <= 10:
 	    return False
 	askVar = self.filterDic[tick.vtSymbol]['ask'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['ask'][:-1]) - 1
 	bidVar = self.filterDic[tick.vtSymbol]['bid'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['bid'][:-1]) - 1 

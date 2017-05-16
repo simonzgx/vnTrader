@@ -82,6 +82,9 @@ class CtpAndIB(CtaTemplate):
         self.dfr = 0
         self.dfr_2 = 0
 	self.isStart = False
+	self.longCheckList = []
+	self.shortCheckList = []
+	self.second = -1
     #----------------------------------------------------------------------
     def onInit(self):
 	self.loadPosInfo()
@@ -130,7 +133,11 @@ class CtpAndIB(CtaTemplate):
 	if self.isFilter :
 	    if not self.doFilter(tick) :
 		return
-
+	now = datetime.datetime.now()
+	if self.second != now.second:
+	    self.second = now.second
+	    self.longCheckList = []
+	    self.shortCheckList = []
 #2016/11/21=============================================================
         if tick.vtSymbol==self.shortsymbol :
             self.shortsymbolAskPrice = tick.askPrice1
@@ -142,24 +149,56 @@ class CtpAndIB(CtaTemplate):
         self.dfr_2 = self.shortsymbolAskPrice*self.shortPriceCoe - self.longsymbolBidPrice*self.longPriceCoe
 	if tick.askPrice1 == tick.lowerLimit or tick.bidPrice1 == tick.upperLimit:
 	    return 
+	if not self.isStart :
+	    self.putEvent()
+	    return
         if self.shortsymbolAskPrice!=0 and self.longsymbolAskPrice!=0 and self.shortsymbolBidPrice!=0 and self.longsymbolBidPrice!=0:
             for i in range(0,len(self.buyPrice)):
 	        if self.buyPrice[i] <= self.dfr and self.postoday[self.shortsymbol]<(i+1)*self.shortBuyUnit :
+		    if i in self.shortCheckList:
+			logs = u'策略' + self.name + u'在1秒内重复开单 ' + self.shortsymbol + u'停止运行！'
+			self.isStart = False
+			self.writeCtaLog(logs)
+			
+			return
+		    else :
+			self.shortCheckList.append(i)
 		    tradeId = self.short(self.shortsymbolBidPrice-self.shortSlippage,self.shortBuyUnit,self.shortsymbol,self.shortMKT)
 		    
 		    self.postoday[self.shortsymbol] += self.shortBuyUnit
 		    self.saveParameter()
 		if self.buyPrice[i] <= self.dfr and self.postoday[self.longsymbol]<(i+1)*self.longBuyUnit :
+		    if i in self.longCheckList:
+			logs = u'策略' + self.name + u'在1秒内重复开单 ' + self.longsymbol + u'停止运行！'
+			self.isStart = False
+			self.writeCtaLog(logs)
+			return
+		    else :
+			self.shortCheckList.append(i)
 		    tradeId = self.buy(self.longsymbolAskPrice+self.longSlippage, self.longBuyUnit, self.longsymbol,self.longMKT)
 		    
 		    self.postoday[self.longsymbol] += self.longBuyUnit
 		    self.saveParameter()
 	        if self.dfr_2 <= self.buyPrice[i] - self.stpProfit and self.postoday[self.shortsymbol]> i*self.shortBuyUnit :	
+		    if i in self.shortCheckList:
+			logs = u'策略' + self.name + u'在1秒内重复开单 ' + self.shortsymbol + u'停止运行！'
+			self.isStart = False
+			self.writeCtaLog(logs)
+			return
+		    else :
+			self.shortCheckList.append(i)
 		    tradeId = self.cover(self.shortsymbolAskPrice+self.shortSlippage, self.shortBuyUnit, self.shortsymbol, self.shortMKT)
 		    
 		    self.postoday[self.shortsymbol] -= self.shortBuyUnit
 		    self.saveParameter()
 		if self.dfr_2 <= self.buyPrice[i] - self.stpProfit and self.postoday[self.longsymbol]> i*self.longBuyUnit :
+		    if i in self.longCheckList:
+			logs = u'策略' + self.name + u'在1秒内重复开单 ' + self.longsymbol + u'停止运行！'
+			self.isStart = False
+			self.writeCtaLog(logs)
+			return
+		    else :
+			self.shortCheckList.append(i)
 		    tradeId = self.sell(self.longsymbolBidPrice-self.longSlippage, self.longBuyUnit, self.longsymbol, self.longMKT)
 		    
 		    self.postoday[self.longsymbol] -= self.longBuyUnit
@@ -787,6 +826,7 @@ class strategyTimeQWidget(QtGui.QWidget):
 	screen = QtGui.QDesktopWidget().screenGeometry()
 	size = self.geometry()
 	self.move((screen.width() - size.width())/2, (screen.height() - size.height())/2)
+
 
 
 
