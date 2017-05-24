@@ -184,7 +184,7 @@ class tradeTest(CtaTemplate):
 			self.writeCtaLog(logs)
 			return
 		    else :
-			self.shortCheckList.append(i)
+			self.longCheckList.append(i)
 		    tradeId = self.buy(self.longsymbolAskPrice+self.slippage, self.longBuyUnit, self.longsymbol)
 		    
 		    self.postoday[self.longsymbol] += self.longBuyUnit
@@ -208,7 +208,7 @@ class tradeTest(CtaTemplate):
 			self.writeCtaLog(logs)
 			return
 		    else :
-			self.shortCheckList.append(i)
+			self.longCheckList.append(i)
 		    tradeId = self.sell(self.longsymbolBidPrice-self.slippage, self.longBuyUnit, self.longsymbol)
 		    
 		    self.postoday[self.longsymbol] -= self.longBuyUnit

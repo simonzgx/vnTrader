@@ -174,7 +174,7 @@ class CtpAndIB(CtaTemplate):
 			self.writeCtaLog(logs)
 			return
 		    else :
-			self.shortCheckList.append(i)
+			self.longCheckList.append(i)
 		    tradeId = self.buy(self.longsymbolAskPrice+self.longSlippage, self.longBuyUnit, self.longsymbol,self.longMKT)
 		    
 		    self.postoday[self.longsymbol] += self.longBuyUnit
@@ -198,7 +198,7 @@ class CtpAndIB(CtaTemplate):
 			self.writeCtaLog(logs)
 			return
 		    else :
-			self.shortCheckList.append(i)
+			self.longCheckList.append(i)
 		    tradeId = self.sell(self.longsymbolBidPrice-self.longSlippage, self.longBuyUnit, self.longsymbol, self.longMKT)
 		    
 		    self.postoday[self.longsymbol] -= self.longBuyUnit
