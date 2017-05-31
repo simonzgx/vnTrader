@@ -138,7 +138,7 @@ class CtaEngine(object):
         req = VtOrderReq()
         req.symbol = contract.symbol
         req.exchange = contract.exchange
-        req.price = price
+        req.price = price - price%contract.priceTick
         req.volume = volume
         if isMKT :
 	    req.priceType = PRICETYPE_MARKETPRICE
@@ -166,7 +166,7 @@ class CtaEngine(object):
         req = VtOrderReq()
         req.symbol = contract.symbol
         req.exchange = contract.exchange
-        req.price = price
+        req.price = price - price%contract.priceTick
         req.volume = volume
         closeFirst = strategy.closeFirst
         req.productClass = strategy.productClass
