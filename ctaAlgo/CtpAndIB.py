@@ -140,17 +140,41 @@ class CtpAndIB(CtaTemplate):
 	    self.shortCheckList = []
 #2016/11/21=============================================================
         if tick.vtSymbol==self.shortsymbol :
-            self.shortsymbolAskPrice = tick.askPrice1
-            self.shortsymbolBidPrice = tick.bidPrice1
+	    if self.shortsymbolAskPrice == 0:
+		self.shortsymbolAskPrice = tick.askPrice1
+	    if self.shortsymbolBidPrice == 0:
+                self.shortsymbolBidPrice = tick.bidPrice1
+	    if 0.9 < self.shortsymbolAskPrice/tick.askPrice1 < 1.1:
+                self.shortsymbolAskPrice = tick.askPrice1
+	    if 0.9 < self.shortsymbolBidPrice/tick.bidPrice1 < 1.1:
+                self.shortsymbolBidPrice = tick.bidPrice1
         else :
-            self.longsymbolAskPrice = tick.askPrice1
-            self.longsymbolBidPrice = tick.bidPrice1
+	    if self.longsymbolAskPrice == 0:
+                self.longsymbolAskPrice = tick.askPrice1
+	    if self.longsymbolBidPrice == 0:
+                self.longsymbolBidPrice = tick.bidPrice1
+	    if 0.9 < self.longsymbolAskPrice/tick.askPrice1 < 1.1:
+                self.longsymbolAskPrice = tick.askPrice1
+	    if 0.9 < self.longsymbolBidPrice/tick.bidPrice1 < 1.1:
+                self.longsymbolBidPrice = tick.bidPrice1
         self.dfr = self.shortsymbolBidPrice*self.shortPriceCoe - self.longsymbolAskPrice*self.longPriceCoe        
         self.dfr_2 = self.shortsymbolAskPrice*self.shortPriceCoe - self.longsymbolBidPrice*self.longPriceCoe
 	if tick.askPrice1 == tick.lowerLimit or tick.bidPrice1 == tick.upperLimit:
 	    return 
 	if not self.isStart :
 	    self.putEvent()
+	    return
+	if self.isStop:
+	    return
+	if self.dfr > self.stpLos:
+	    tradeId = self.cover(self.shortsymbolAskPrice+self.shortSlippage, self.postoday[self.shortsymbol], self.shortsymbol)    
+	    self.postoday[self.shortsymbol] = 0
+	    tradeId = self.sell(self.longsymbolBidPrice-self.longSlippage, self.postoday[self.longsymbol], self.longsymbol)   
+	    self.postoday[self.longsymbol] = 0
+	    logs = u'策略 ' + self.name + u' 触发止损 ' +  u' 停止运行！'
+	    self.isStop = True
+	    self.writeCtaLog(logs)
+	    self.saveParameter()
 	    return
         if self.shortsymbolAskPrice!=0 and self.longsymbolAskPrice!=0 and self.shortsymbolBidPrice!=0 and self.longsymbolBidPrice!=0:
             for i in range(0,len(self.buyPrice)):
@@ -278,6 +302,8 @@ class CtpAndIB(CtaTemplate):
         self.shortPriceCoe = param['shortPriceCoe']
         self.longPriceCoe = param['longPriceCoe']
         self.receivers = param['receivers']
+	self.isStop = param['isStop']
+	self.stpLos = param['stpLos']
 	self.tradeTime = param['tradeTime']
 	self.isFilter = param['isFilter']
 	if self.isFilter == True:
@@ -301,6 +327,8 @@ class CtpAndIB(CtaTemplate):
         param['receivers'] = self.receivers
 	param['tradeTime'] = self.tradeTime
 	param['isFilter'] = self.isFilter
+	param['isStop'] = self.isStop
+	param['stpLos'] = self.stpLos
 	if param['isFilter'] == True:
 	    param['var'] = self.var
 	d1 = json.dumps(param,sort_keys=True,indent=4)
@@ -309,12 +337,12 @@ class CtpAndIB(CtaTemplate):
 	    f.close()
 ########################################################################################
 class ParamWindow3(QtGui.QWidget):
-    def __init__(self,name=None, longsymbol=None, shortsymbol=None,CtaEngineManager=None):
+    def __init__(self,name=None, longsymbol=None, shortsymbol=None,ctaEngine=None):
 	super(ParamWindow3,self).__init__()
 	self.resize(365, 500)
 	self.shortsymbol = shortsymbol
 	self.longsymbol = longsymbol
-	self.ce = CtaEngineManager
+	self.ce = ctaEngine
 	self.saveButton = QtGui.QPushButton(u"保存",self)
 	self.cancelButton = QtGui.QPushButton(u"取消",self)
 	self.setWindowTitle(u"参数")
@@ -416,6 +444,11 @@ class ParamWindow3(QtGui.QWidget):
 	layout.addWidget(label_stpProfit,9,0)
 	layout.addWidget(self.lineEdit_label_stpProfit,9,1,1,3)
 
+	label_stpLos = QtGui.QLabel(u"止损", self)
+	self.lineEdit_label_stpLos = QtGui.QLineEdit(self)
+	layout.addWidget(label_stpLos,9,5,1,1)
+	layout.addWidget(self.lineEdit_label_stpLos,9,7,1,2)
+
 	self.isFilter = QtGui.QCheckBox(u'波动', self)
 	self.lineEdit_label_var = QtGui.QLineEdit(self)
 	layout.addWidget(self.isFilter,10,0)
@@ -463,7 +496,7 @@ class ParamWindow3(QtGui.QWidget):
 	self.lineEdit_label_stpProfit.setText(str(self.paramters["stpProfit"]))
 	self.lineEdit_label_longSlippage.setText(str(self.paramters["longSlippage"]))
 	self.lineEdit_label_shortSlippage.setText(str(self.paramters["shortSlippage"]))
-
+	self.lineEdit_label_stpLos.setText(str(self.paramters["stpLos"]))
 	if self.paramters['closeFirst'] == True:
 	    self.closeFirst.setChecked(True)
 	else :
@@ -532,6 +565,13 @@ class ParamWindow3(QtGui.QWidget):
 	except ValueError:
 	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'滑点应该是一个数字！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
+	    return
+
+	try:	
+	    self.paramters["stpLos"] = int(self.lineEdit_label_stpLos.text())
+	except ValueError:
+	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
+                                           u'止损应该是一个数字！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
 	    return
 
 	bp = []
@@ -659,29 +699,33 @@ class ParamWindow3(QtGui.QWidget):
 	    else :
 	        self.strategyName = self.strategyname_label.text()
 	    self.fileName = "parameter_" + self.strategyName + ".json"
+     	    self.paramters['isStop'] = False
 	    with open(self.fileName, 'a') as f:
 		f.write("{}")
 		f.close()
 	if 'tradeTime' not in self.paramters.keys():
 	    self.paramters['tradeTime'] = {}
-	self.saveP()
+	self.paramters['isStop'] = False
 
-    def saveP(self):
 	d1 = json.dumps(self.paramters,sort_keys=True,indent=4)
-
 	with open(self.fileName, "w") as f:
 	    
 	    f.write(d1)
 	    f.close()
 	self.setting['name'] = str(self.strategyName)
 	self.setting['className'] = 'CtpAndIB'
-	self.setting['vtSymbol'] = self.longsymbol + ',' + self.shortsymbol
-	self.setting['longSymbol'] = self.longsymbol
-	self.setting['shortSymbol'] = self.shortsymbol
+	self.setting['longSymbol'] = str(self.lineEdit_label_longsymbol.text())
+	self.setting['shortSymbol'] = str(self.lineEdit_label_shortsymbol.text())
+	self.setting['vtSymbol'] = self.setting['longSymbol'] + ',' + self.setting['shortSymbol']
+	self.ce.chStrategy(self.setting,self.strategyName)
+	f = 0
 	if self.name == "" and self.firstSave :
-	    self.ce.ctaEngine.addStrategy(self.setting,self.strategyName)
+	    f = self.ce.addStrategy(self.setting,self.strategyName)
 	    self.firstSave = False
-
+	if self.setting['name'] == "":
+	    self.setting['name'] = self.name
+	if f != -1:
+	    self.ce.chStrategy(self.setting,self.strategyName)
 
 class myButton(QtGui.QPushButton):
 

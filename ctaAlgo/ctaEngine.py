@@ -114,22 +114,27 @@ class CtaEngine(object):
 	with open(self.settingFileName,'r') as f:
             l = json.load(f)
 	    f.close()
-#	flag = None
-#	for x in range(0,len(l)):
-#	    if l[x]['name'] == setting['name']:
-#		flag = x
-#	if flag==None:
-#	    l.append(setting)
-#	else:
-#	    l[flag] = setting	
+	
 	for x in l :
 	    if x['name'] == setting['name']:
 		self.writeCtaLog(u'策略实例重名！！')
-	    	return 
+	    	return -1
 	with open(self.settingFileName,'w') as f:
 	    l.append(setting)
 	    json.dump(l, f)
 	    f.close()
+    
+    def chStrategy(self,setting, strategyName=None, strategyType=None):
+	with open(self.settingFileName,'r') as f:
+            l = json.load(f)
+	    f.close()
+	for x in range(0, len(l)) :
+	    if l[x]['name'] == setting['name']:
+		l[x] = setting
+	with open(self.settingFileName,'w') as f:
+	    json.dump(l, f)
+	    f.close()
+
 #==============================================================================
 #==============================================================================
 #==============================================================================

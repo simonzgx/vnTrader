@@ -127,11 +127,11 @@ class CtaStrategyManager(QtGui.QGroupBox):
         self.registerEvent()
 	
 	if className == 'tradeTest':
-            self.paramWindow = ParamWindow(self.name,longsymbol,shortsymbol)
+            self.paramWindow = ParamWindow(self.name,longsymbol,shortsymbol, ctaEngine)
 	elif className == "CtpAndIB":
-            self.paramWindow = ParamWindow3(self.name,longsymbol,shortsymbol)
+            self.paramWindow = ParamWindow3(self.name,longsymbol,shortsymbol, ctaEngine)
 	else:
-	    self.paramWindow = ParamWindow2(self.name, direction, vtSymbol)
+	    self.paramWindow = ParamWindow2(self.name, direction, vtSymbol, ctaEngine)
     #----------------------------------------------------------------------
     def initUi(self):
         """初始化界面"""
@@ -345,9 +345,9 @@ class CtaEngineManager(QtGui.QWidget):
     #----------------------------------------------------------------------
     
     def addStrategy(self):
-	self.pw = ParamWindow("","","",self)
-	self.gt = ParamWindow2("","","",self)
-	self.cai = ParamWindow3("","","",self)
+	self.pw = ParamWindow("","","",self.ctaEngine)
+	self.gt = ParamWindow2("","","",self.ctaEngine)
+	self.cai = ParamWindow3("","","",self.ctaEngine)
 	self.sw = strategyWindow(self.pw, self.gt,self.cai)
 	self.sw.show()
  
