@@ -120,12 +120,14 @@ class strategyGirdTrading(CtaTemplate):
     #----------------------------------------------------------------------
     def onTick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
+        # 计算K线
+	if not self.isTrade():
+	    return
 	if self.isFilter :
 	    if not self.doFilter(tick) :
 		return
         tickMinute = tick.datetime.minute   #by hw
-	if not self.isTrade():
-	    return
+
 	self.curPrice = tick.bidPrice1
 	self.BidPrice = tick.bidPrice1
 	self.AskPrice = tick.askPrice1
@@ -196,14 +198,17 @@ class strategyGirdTrading(CtaTemplate):
 	    self.filterDic[tick.vtSymbol] = {'ask':[], 'bid':[]}
 	self.filterDic[tick.vtSymbol]['ask'].append(tick.askPrice1)
 	self.filterDic[tick.vtSymbol]['bid'].append(tick.bidPrice1)
+	if len(self.filterDic[tick.vtSymbol]['bid']) <= 10:
+	    return False
+	else :
+	    self.filterDic[tick.vtSymbol]['ask'].pop(0)
+	    self.filterDic[tick.vtSymbol]['bid'].pop(0)
 
-	if len(self.filterDic[tick.vtSymbol]['bid'] <= 10):
+	askVar = self.filterDic[tick.vtSymbol]['ask'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['ask']) - 1
+	bidVar = self.filterDic[tick.vtSymbol]['bid'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['bid']) - 1 
+	if abs(askVar)  >= float(self.var)/100 :
 	    return False
-	askVar = self.filterDic[tick.vtSymbol]['ask'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['ask'][:-1]) - 1
-	bidVar = self.filterDic[tick.vtSymbol]['bid'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['bid'][:-1]) - 1 
-	if abs(askVar)  >= self.var/100 :
-	    return False
-	if abs(bidVar) >= self.var/100 :
+	if abs(bidVar) >= float(self.var)/100 :
 	    return False
 	return True
 #----------------------------------------------------------------------
@@ -416,6 +421,7 @@ class ParamWindow2(QtGui.QWidget):
 
 	if self.paramters['isFilter'] == True:
 	    self.isFilter.setChecked(True)
+	    self.lineEdit_label_var.setText(str(self.paramters['var']))
 	else :
 	    self.isFilter.setChecked(False)
 
@@ -493,7 +499,7 @@ class ParamWindow2(QtGui.QWidget):
 
 	if self.isFilter.isChecked():
 	    try :
-	        self.paramters["var"] = int(self.lineEdit_label_var.text())
+	        self.paramters["var"] = float(self.lineEdit_label_var.text())
 	    except ValueError:
 	        reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'波动率应该是一个数字！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
@@ -594,7 +600,7 @@ class ParamWindow2(QtGui.QWidget):
 	self.setting['vtSymbol'] = self.vtSymbol
 
 	if self.name == "" and self.firstSave :
-	    self.ce.ctaEngine.addStrategy(self.setting,self.strategyName)
+	    self.ce.addStrategy(self.setting,self.strategyName)
 	    self.firstSave = False
 
 class myButton(QtGui.QPushButton):

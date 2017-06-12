@@ -257,14 +257,17 @@ class CtpAndIB(CtaTemplate):
 	    self.filterDic[tick.vtSymbol] = {'ask':[], 'bid':[]}
 	self.filterDic[tick.vtSymbol]['ask'].append(tick.askPrice1)
 	self.filterDic[tick.vtSymbol]['bid'].append(tick.bidPrice1)
+	if len(self.filterDic[tick.vtSymbol]['bid']) <= 10:
+	    return False
+	else :
+	    self.filterDic[tick.vtSymbol]['ask'].pop(0)
+	    self.filterDic[tick.vtSymbol]['bid'].pop(0)
 
-	if len(self.filterDic[tick.vtSymbol]['bid'] <= 10):
+	askVar = self.filterDic[tick.vtSymbol]['ask'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['ask']) - 1
+	bidVar = self.filterDic[tick.vtSymbol]['bid'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['bid']) - 1 
+	if abs(askVar)  >= float(self.var)/100 :
 	    return False
-	askVar = self.filterDic[tick.vtSymbol]['ask'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['ask'][:-1]) - 1
-	bidVar = self.filterDic[tick.vtSymbol]['bid'][-1]*10 / sum(self.filterDic[tick.vtSymbol]['bid'][:-1]) - 1 
-	if abs(askVar)  >= self.var/100 :
-	    return False
-	if abs(bidVar) >= self.var/100 :
+	if abs(bidVar) >= float(self.var)/100 :
 	    return False
 	return True
 
@@ -509,6 +512,7 @@ class ParamWindow3(QtGui.QWidget):
 
 	if self.paramters['shortMKT'] == True:
 	    self.shortMKT.setChecked(True)
+	    self.lineEdit_label_var.setText(str(self.paramters['var']))
 	else:
 	    self.shortMKT.setChecked(False)
 
@@ -672,7 +676,7 @@ class ParamWindow3(QtGui.QWidget):
 	    self.paramters['isFilter'] = False
 	if self.isFilter.isChecked():
 	    try :
-	        self.paramters["var"] = int(self.lineEdit_label_var.text())
+	        self.paramters["var"] = float(self.lineEdit_label_var.text())
 	    except ValueError:
 	        reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'波动率应该是一个数字！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)

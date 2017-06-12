@@ -990,7 +990,6 @@ class CtpTdApi(TdApi):
         
         trade.orderID = data['OrderRef']
         trade.vtOrderID = '.'.join([self.gatewayName, trade.orderID])
-        
         # 方向
         trade.direction = directionMapReverse.get(data['Direction'], '')
             
@@ -1285,7 +1284,7 @@ class CtpTdApi(TdApi):
         req = {}
         
         req['InstrumentID'] = orderReq.symbol
-        req['LimitPrice'] = orderReq.price
+        req['LimitPrice'] = round(orderReq.price, 2)
         req['VolumeTotalOriginal'] = orderReq.volume
         
         # 下面如果由于传入的类型本接口不支持，则会返回空字符串
