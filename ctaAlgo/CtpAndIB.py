@@ -144,19 +144,25 @@ class CtpAndIB(CtaTemplate):
 		self.shortsymbolAskPrice = tick.askPrice1
 	    if self.shortsymbolBidPrice == 0:
                 self.shortsymbolBidPrice = tick.bidPrice1
-	    if 0.9 < self.shortsymbolAskPrice/tick.askPrice1 < 1.1:
-                self.shortsymbolAskPrice = tick.askPrice1
-	    if 0.9 < self.shortsymbolBidPrice/tick.bidPrice1 < 1.1:
-                self.shortsymbolBidPrice = tick.bidPrice1
+	    try:
+	        if 0.9 < self.shortsymbolAskPrice/tick.askPrice1 < 1.1:
+                    self.shortsymbolAskPrice = tick.askPrice1
+	        if 0.9 < self.shortsymbolBidPrice/tick.bidPrice1 < 1.1:
+                    self.shortsymbolBidPrice = tick.bidPrice1
+	    except:
+		pass
         else :
 	    if self.longsymbolAskPrice == 0:
                 self.longsymbolAskPrice = tick.askPrice1
 	    if self.longsymbolBidPrice == 0:
                 self.longsymbolBidPrice = tick.bidPrice1
-	    if 0.9 < self.longsymbolAskPrice/tick.askPrice1 < 1.1:
-                self.longsymbolAskPrice = tick.askPrice1
-	    if 0.9 < self.longsymbolBidPrice/tick.bidPrice1 < 1.1:
-                self.longsymbolBidPrice = tick.bidPrice1
+	    try:
+	        if 0.9 < self.longsymbolAskPrice/tick.askPrice1 < 1.1:
+                    self.longsymbolAskPrice = tick.askPrice1
+	        if 0.9 < self.longsymbolBidPrice/tick.bidPrice1 < 1.1:
+                    self.longsymbolBidPrice = tick.bidPrice1
+	    except:
+		pass
         self.dfr = self.shortsymbolBidPrice*self.shortPriceCoe - self.longsymbolAskPrice*self.longPriceCoe        
         self.dfr_2 = self.shortsymbolAskPrice*self.shortPriceCoe - self.longsymbolBidPrice*self.longPriceCoe
 	if tick.askPrice1 == tick.lowerLimit or tick.bidPrice1 == tick.upperLimit:
