@@ -144,46 +144,57 @@ class CtpAndIB(CtaTemplate):
 		self.shortsymbolAskPrice = tick.askPrice1
 	    if self.shortsymbolBidPrice == 0 and tick.bidPrice1>0:
                 self.shortsymbolBidPrice = tick.bidPrice1
-	    if 0.9 < self.shortsymbolAskPrice/tick.askPrice1 < 1.1:
-                self.shortsymbolAskPrice = tick.askPrice1
-	    if 0.9 < self.shortsymbolBidPrice/tick.bidPrice1 < 1.1:
-                self.shortsymbolBidPrice = tick.bidPrice1
+	    try :
+	        if 0.9 < self.shortsymbolAskPrice/tick.askPrice1 < 1.1:
+                    self.shortsymbolAskPrice = tick.askPrice1
+	        if 0.9 < self.shortsymbolBidPrice/tick.bidPrice1 < 1.1:
+                    self.shortsymbolBidPrice = tick.bidPrice1
+	    except:
+		self.putEvent()
+		pass
         else :
 	    if self.longsymbolAskPrice == 0 and tick.askPrice1:
                 self.longsymbolAskPrice = tick.askPrice1
 	    if self.longsymbolBidPrice == 0 and tick.bidPrice1:
                 self.longsymbolBidPrice = tick.bidPrice1
-	    if 0.9 < self.longsymbolAskPrice/tick.askPrice1 < 1.1:
-                self.longsymbolAskPrice = tick.askPrice1
-	    if 0.9 < self.longsymbolBidPrice/tick.bidPrice1 < 1.1:
-                self.longsymbolBidPrice = tick.bidPrice1
+	    try:
+	        if 0.9 < self.longsymbolAskPrice/tick.askPrice1 < 1.1:
+                    self.longsymbolAskPrice = tick.askPrice1
+	        if 0.9 < self.longsymbolBidPrice/tick.bidPrice1 < 1.1:
+                    self.longsymbolBidPrice = tick.bidPrice1
+	    except:
+		self.putEvent()
+		pass
         self.dfr = self.shortsymbolBidPrice*self.shortPriceCoe - self.longsymbolAskPrice*self.longPriceCoe        
         self.dfr_2 = self.shortsymbolAskPrice*self.shortPriceCoe - self.longsymbolBidPrice*self.longPriceCoe
 	if tick.askPrice1 == tick.lowerLimit or tick.bidPrice1 == tick.upperLimit:
+	    self.putEvent()
 	    return 
 	if not self.isStart :
 	    self.putEvent()
 	    return
 	if self.isStop:
-	    return
-	if self.dfr > self.stpLos:
-	    tradeId = self.cover(self.shortsymbolAskPrice+self.shortSlippage, self.postoday[self.shortsymbol], self.shortsymbol)    
-	    self.postoday[self.shortsymbol] = 0
-	    tradeId = self.sell(self.longsymbolBidPrice-self.longSlippage, self.postoday[self.longsymbol], self.longsymbol)   
-	    self.postoday[self.longsymbol] = 0
-	    logs = u'策略 ' + self.name + u' 触发止损 ' +  u' 停止运行！'
-	    self.isStop = True
-	    self.writeCtaLog(logs)
-	    self.saveParameter()
+	    self.putEvent()
 	    return
         if self.shortsymbolAskPrice!=0 and self.longsymbolAskPrice!=0 and self.shortsymbolBidPrice!=0 and self.longsymbolBidPrice!=0:
+	    if self.dfr > self.stpLos:
+	        tradeId = self.cover(self.shortsymbolAskPrice+self.shortSlippage, self.postoday[self.shortsymbol], self.shortsymbol)    
+	        self.postoday[self.shortsymbol] = 0
+	        tradeId = self.sell(self.longsymbolBidPrice-self.longSlippage, self.postoday[self.longsymbol], self.longsymbol)   
+	        self.postoday[self.longsymbol] = 0
+	        logs = u'策略 ' + self.name + u' 触发止损 ' +  u' 停止运行！'
+	        self.isStop = True
+	        self.writeCtaLog(logs)
+	        self.saveParameter()
+		self.putEvent()
+	        return
             for i in range(0,len(self.buyPrice)):
 	        if self.buyPrice[i] <= self.dfr and self.postoday[self.shortsymbol]<(i+1)*self.shortBuyUnit :
 		    if i in self.shortCheckList:
 			logs = u'策略' + self.name + u'在1秒内重复开单 ' + self.shortsymbol + u'停止运行！'
 			self.isStart = False
 			self.writeCtaLog(logs)
-			
+			self.putEvent()
 			return
 		    else :
 			self.shortCheckList.append(i)
@@ -196,6 +207,7 @@ class CtpAndIB(CtaTemplate):
 			logs = u'策略' + self.name + u'在1秒内重复开单 ' + self.longsymbol + u'停止运行！'
 			self.isStart = False
 			self.writeCtaLog(logs)
+			self.putEvent()
 			return
 		    else :
 			self.longCheckList.append(i)
@@ -208,6 +220,7 @@ class CtpAndIB(CtaTemplate):
 			logs = u'策略' + self.name + u'在1秒内重复开单 ' + self.shortsymbol + u'停止运行！'
 			self.isStart = False
 			self.writeCtaLog(logs)
+			self.putEvent()
 			return
 		    else :
 			self.shortCheckList.append(i)
@@ -220,6 +233,7 @@ class CtpAndIB(CtaTemplate):
 			logs = u'策略' + self.name + u'在1秒内重复开单 ' + self.longsymbol + u'停止运行！'
 			self.isStart = False
 			self.writeCtaLog(logs)
+			self.putEvent()
 			return
 		    else :
 			self.longCheckList.append(i)
