@@ -140,29 +140,23 @@ class CtpAndIB(CtaTemplate):
 	    self.shortCheckList = []
 #2016/11/21=============================================================
         if tick.vtSymbol==self.shortsymbol :
-	    if self.shortsymbolAskPrice == 0:
+	    if self.shortsymbolAskPrice == 0 and tick.askPrice1>0:
 		self.shortsymbolAskPrice = tick.askPrice1
-	    if self.shortsymbolBidPrice == 0:
+	    if self.shortsymbolBidPrice == 0 and tick.bidPrice1>0:
                 self.shortsymbolBidPrice = tick.bidPrice1
-	    try:
-	        if 0.9 < self.shortsymbolAskPrice/tick.askPrice1 < 1.1:
-                    self.shortsymbolAskPrice = tick.askPrice1
-	        if 0.9 < self.shortsymbolBidPrice/tick.bidPrice1 < 1.1:
-                    self.shortsymbolBidPrice = tick.bidPrice1
-	    except:
-		pass
+	    if 0.9 < self.shortsymbolAskPrice/tick.askPrice1 < 1.1:
+                self.shortsymbolAskPrice = tick.askPrice1
+	    if 0.9 < self.shortsymbolBidPrice/tick.bidPrice1 < 1.1:
+                self.shortsymbolBidPrice = tick.bidPrice1
         else :
-	    if self.longsymbolAskPrice == 0:
+	    if self.longsymbolAskPrice == 0 and tick.askPrice1:
                 self.longsymbolAskPrice = tick.askPrice1
-	    if self.longsymbolBidPrice == 0:
+	    if self.longsymbolBidPrice == 0 and tick.bidPrice1:
                 self.longsymbolBidPrice = tick.bidPrice1
-	    try:
-	        if 0.9 < self.longsymbolAskPrice/tick.askPrice1 < 1.1:
-                    self.longsymbolAskPrice = tick.askPrice1
-	        if 0.9 < self.longsymbolBidPrice/tick.bidPrice1 < 1.1:
-                    self.longsymbolBidPrice = tick.bidPrice1
-	    except:
-		pass
+	    if 0.9 < self.longsymbolAskPrice/tick.askPrice1 < 1.1:
+                self.longsymbolAskPrice = tick.askPrice1
+	    if 0.9 < self.longsymbolBidPrice/tick.bidPrice1 < 1.1:
+                self.longsymbolBidPrice = tick.bidPrice1
         self.dfr = self.shortsymbolBidPrice*self.shortPriceCoe - self.longsymbolAskPrice*self.longPriceCoe        
         self.dfr_2 = self.shortsymbolAskPrice*self.shortPriceCoe - self.longsymbolBidPrice*self.longPriceCoe
 	if tick.askPrice1 == tick.lowerLimit or tick.bidPrice1 == tick.upperLimit:
@@ -518,12 +512,12 @@ class ParamWindow3(QtGui.QWidget):
 
 	if self.paramters['shortMKT'] == True:
 	    self.shortMKT.setChecked(True)
-	    self.lineEdit_label_var.setText(str(self.paramters['var']))
 	else:
 	    self.shortMKT.setChecked(False)
 
 	if self.paramters['isFilter'] == True:
 	    self.isFilter.setChecked(True)
+	    self.lineEdit_label_var.setText(str(self.paramters['var']))
 	else :
 	    self.isFilter.setChecked(False)
 
@@ -676,8 +670,8 @@ class ParamWindow3(QtGui.QWidget):
 	else :
 	    self.paramters['shortMKT'] = False
 
-	if self.isFilter.isChecked():
-	    self.paramters['isFilter'] = True
+	if self.paramters['isFilter'] == True:
+	    self.isFilter.setChecked(True)
 	else :
 	    self.paramters['isFilter'] = False
 	if self.isFilter.isChecked():
