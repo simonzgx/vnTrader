@@ -684,8 +684,8 @@ class ParamWindow3(QtGui.QWidget):
 	else :
 	    self.paramters['shortMKT'] = False
 
-	if self.paramters['isFilter'] == True:
-	    self.isFilter.setChecked(True)
+	if self.isFilter.isChecked():
+	    self.paramters['isFilter'] = True
 	else :
 	    self.paramters['isFilter'] = False
 	if self.isFilter.isChecked():
