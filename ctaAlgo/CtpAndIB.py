@@ -461,7 +461,7 @@ class ParamWindow3(QtGui.QWidget):
 	layout.addWidget(label_stpProfit,9,0)
 	layout.addWidget(self.lineEdit_label_stpProfit,9,1,1,3)
 
-	label_stpLos = QtGui.QLabel(u"止损", self)
+	label_stpLos = QtGui.QLabel(u"止损位", self)
 	self.lineEdit_label_stpLos = QtGui.QLineEdit(self)
 	layout.addWidget(label_stpLos,9,5,1,1)
 	layout.addWidget(self.lineEdit_label_stpLos,9,7,1,2)
