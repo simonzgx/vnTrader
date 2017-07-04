@@ -79,6 +79,7 @@ class strategyGirdTrading(CtaTemplate):
 	self.loadParameter()
         self.flag = 0
 	self.curPrice = 0
+	self.isStart = False
     #----------------------------------------------------------------------
     def onInit(self):
 	self.loadPosInfo()
@@ -97,6 +98,7 @@ class strategyGirdTrading(CtaTemplate):
         
     #----------------------------------------------------------------------
     def onStart(self):
+	self.isStart = True
         self.loadParameter()
 	self.loadPosInfo()
         """启动策略（必须由用户继承实现）"""
@@ -105,6 +107,7 @@ class strategyGirdTrading(CtaTemplate):
 
     #----------------------------------------------------------------------
     def onStop(self):
+	self.isStart = False
 	self.filterDic = {}
 	self.loadPosInfo()
         self.saveParameter()
@@ -131,6 +134,9 @@ class strategyGirdTrading(CtaTemplate):
 	self.curPrice = tick.bidPrice1
 	self.BidPrice = tick.bidPrice1
 	self.AskPrice = tick.askPrice1
+	if not self.isStart:
+	    self.putEvent()
+	    return
 	if tick.askPrice1 == tick.lowerLimit or tick.bidPrice1 == tick.upperLimit:
 	    return 
 	if self.isStop :
@@ -262,7 +268,8 @@ class strategyGirdTrading(CtaTemplate):
 	    self.var = param['var']
 	
     def saveParameter(self) :
-
+	if not self.isStart:
+	    return
         param = {}
 	param['closeFirst'] = self.closeFirst
         param["stpProfit"] = self.stpProfit
