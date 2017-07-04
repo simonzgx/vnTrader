@@ -3,7 +3,7 @@
 import time
 
 from eventEngine import *
-
+from vtFunction import emailSender
 from vtConstant import *
 
 
@@ -31,7 +31,7 @@ class VtGateway(object):
         self.eventEngine.put(event2)
     
     #----------------------------------------------------------------------
-    def onTrade(self, trade):
+    def onTrade(self, trade, userID=None, strategyName=None, receivers=None):
         """成交信息推送"""
         # 通用事件
         event1 = Event(type_=EVENT_TRADE)
@@ -41,7 +41,12 @@ class VtGateway(object):
         # 特定合约的成交事件
         event2 = Event(type_=EVENT_TRADE+trade.vtSymbol)
         event2.dict_['data'] = trade
-        self.eventEngine.put(event2)        
+        self.eventEngine.put(event2)  
+	if receivers!=None and strategyName!=None :
+	    title =  u'账户:' + userID + u"成交回报"
+	    text =  u'策略名: ' + strategyName + "  symbol: "+ trade.vtSymbol + u"  方向: " + trade.direction + u"  类型: " + trade.offset + u"  数量: " + str(trade.volume) + u"  成交价格: " + str(trade.price)
+
+            emailSender(receivers, text, title)      
     
     #----------------------------------------------------------------------
     def onOrder(self, order):

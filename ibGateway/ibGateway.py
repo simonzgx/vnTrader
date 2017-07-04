@@ -255,7 +255,12 @@ class IbGateway(VtGateway):
         
         # 查询下一个有效编号
         self.api.reqIds(1)
-        
+	if strategy == None:
+	    self.receivers = []
+	    self.strategyName = ''
+	else :
+      	    self.receivers = strategy.receivers
+	    self.strategyName = strategy.name
         # 返回委托编号
         vtOrderID = '.'.join([self.gatewayName, str(self.orderId)])
         return vtOrderID
@@ -604,7 +609,7 @@ class IbWrapper(IbApi):
         trade.volume = execution.shares
         trade.tradeTime = execution.time  
     
-        self.gateway.onTrade(trade)
+        self.gateway.onTrade(trade, "IB",  self.gateway.strategyName, self.gateway.receivers)
         
     #----------------------------------------------------------------------
     def execDetailsEnd(self, reqId):

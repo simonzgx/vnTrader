@@ -995,17 +995,12 @@ class CtpTdApi(TdApi):
             
         # 开平
         trade.offset = offsetMapReverse.get(data['OffsetFlag'], '')
-           
         # 价格、报单量等数值
         trade.price = data['Price']
         trade.volume = data['Volume']
         trade.tradeTime = data['TradeTime']
-	title =  u'账户:' + self.userID + u"成交回报"
-	text =  u'策略名: ' + self.strategyName + "  symbol: "+ trade.vtSymbol + u"  方向: " + trade.direction + u"  类型: " + trade.offset + u"  数量: " + str(trade.volume) + u"  成交价格: " + str(trade.price)
-
-        emailSender(self.receivers, text, title)
         # 推送
-        self.gateway.onTrade(trade)
+        self.gateway.onTrade(trade, self.userID, self.strategyName, self.receivers)
     
     #----------------------------------------------------------------------
     def onErrRtnOrderInsert(self, data, error):
