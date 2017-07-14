@@ -64,6 +64,73 @@ class strategyWindow(QtGui.QMainWindow):
 	screen = QtGui.QDesktopWidget().screenGeometry()
 	size = self.geometry()
 	self.move((screen.width() - size.width())/2, (screen.height() - size.height())/2)
+
+class MyConsole(QtGui.QWidget):  
+    def __init__(self,parent,l):  
+        QtGui.QWidget.__init__(self)  
+        self.parent = parent  
+        self.l = l
+        self.initUI()  
+               
+    def initUI(self):  
+
+
+	vbox1 = QtGui.QVBoxLayout()
+	for x in self.l:
+	    fileName = "parameter_" + x['name'] + '.json'
+	    d = {}
+	    with open(fileName, 'r') as f:
+		d = json.load(f)
+		f.close()
+	    symbols = d['postoday'].keys()
+	    label = [u'策略名\持仓'] + symbols
+	    newTable = QtGui.QTableWidget(1,3)
+	    newTable.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers) 
+	    newTable.setMaximumHeight(60)
+	    newTable.setHorizontalHeaderLabels(label)
+	    vbox1.addWidget(newTable)
+            newItem = QtGui.QTableWidgetItem(x['name'])  
+            newTable.setItem(0, 0, newItem)
+            newItem = QtGui.QTableWidgetItem(str(d['postoday'][symbols[0]]))  
+            newTable.setItem(0, 1, newItem)
+	    
+	    if len(symbols) == 2:
+                newItem = QtGui.QTableWidgetItem(str(d['postoday'][symbols[1]]))  
+                newTable.setItem(0, 2, newItem)
+
+	self.vbox = vbox1
+	self.setLayout(self.vbox)
+
+class thumbnailWindow(QtGui.QWidget):
+
+    def __init__(self, l, parent=None):  
+        QtGui.QMainWindow.__init__(self, parent)  
+     
+        console = MyConsole(self, l)  
+        console.setMinimumSize(350, 700)  
+          
+        scroll = QtGui.QScrollArea()  
+        scroll.setWidget(console)  
+        scroll.setAutoFillBackground(True)  
+        scroll.setWidgetResizable(True)  
+        vbox = QtGui.QVBoxLayout()  
+        vbox.addWidget(scroll)    
+        self.setLayout(vbox)  
+ 
+	self.initUI()
+
+    def initUI(self):
+	self.setWindowTitle(u"策略持仓")
+	self.center()    
+        self.show()  
+
+    def center(self):
+	screen = QtGui.QDesktopWidget().screenGeometry()
+	self.resize(370,510)
+	size = self.geometry()
+	self.move((screen.width() - size.width())/2, (screen.height() - size.height())/2)
+
+
 	
 ########################################################################
 class CtaValueMonitor(QtGui.QTableWidget):
@@ -273,12 +340,14 @@ class CtaEngineManager(QtGui.QWidget):
         startAllButton = QtGui.QPushButton(u'全部启动')
         stopAllButton = QtGui.QPushButton(u'全部停止')
 	addStrategy = QtGui.QPushButton(u'添加策略')
+	thumbnail = QtGui.QPushButton(u'策略持仓')
         
         loadButton.clicked.connect(self.load)
         initAllButton.clicked.connect(self.initAll)
         startAllButton.clicked.connect(self.startAll)
         stopAllButton.clicked.connect(self.stopAll)
 	addStrategy.clicked.connect(self.addStrategy)
+	thumbnail.clicked.connect(self.thumbnail)
         # 滚动区域，放置所有的CtaStrategyManager
         self.scrollArea = QtGui.QScrollArea()
         self.scrollArea.setWidgetResizable(True)
@@ -295,6 +364,7 @@ class CtaEngineManager(QtGui.QWidget):
         hbox2.addWidget(startAllButton)
         hbox2.addWidget(stopAllButton)
 	hbox2.addWidget(addStrategy)
+	hbox2.addWidget(thumbnail)
         hbox2.addStretch()
         
         vbox = QtGui.QVBoxLayout()
@@ -344,6 +414,18 @@ class CtaEngineManager(QtGui.QWidget):
           
     #----------------------------------------------------------------------
     
+    def thumbnail(self):
+        settingFileName = 'CTA_setting.json'
+        path = os.path.abspath(os.path.dirname(__file__))
+        settingFileName = os.path.join(path, settingFileName)
+	l = []
+	with open(settingFileName, 'r') as f:
+	    l = json.load(f)
+	    f.close()
+	self.tw = thumbnailWindow(l)
+	self.tw.show()
+
+
     def addStrategy(self):
 	self.pw = ParamWindow("","","",self.ctaEngine)
 	self.gt = ParamWindow2("","","",self.ctaEngine)
@@ -382,3 +464,4 @@ class CtaEngineManager(QtGui.QWidget):
 
     
     
+
