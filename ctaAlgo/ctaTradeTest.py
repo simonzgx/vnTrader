@@ -138,14 +138,9 @@ class tradeTest(CtaTemplate):
         # 计算K线
 	
 	if not self.isTrade():
-	    self.putEvent()
-	    return
-	if tick.bidPrice1 == 0 or tick.askPrice1 == 0:
-	    self.putEvent()
 	    return
 	if self.isFilter :
 	    if not self.doFilter(tick) :
-		self.putEvent()
 		return
 	now = datetime.datetime.now()
 	if self.second != now.second:
@@ -875,7 +870,6 @@ class strategyTimeQWidget(QtGui.QWidget):
 	screen = QtGui.QDesktopWidget().screenGeometry()
 	size = self.geometry()
 	self.move((screen.width() - size.width())/2, (screen.height() - size.height())/2)
-
 
 
 

@@ -125,14 +125,9 @@ class strategyGirdTrading(CtaTemplate):
         """收到行情TICK推送（必须由用户继承实现）"""
         # 计算K线
 	if not self.isTrade():
-	    self.putEvent()
-	    return
-	if tick.bidPrice1 == 0 or tick.askPrice1 == 0:
-	    self.putEvent()
 	    return
 	if self.isFilter :
 	    if not self.doFilter(tick) :
-		self.putEvent()
 		return
         tickMinute = tick.datetime.minute   #by hw
 
@@ -143,10 +138,8 @@ class strategyGirdTrading(CtaTemplate):
 	    self.putEvent()
 	    return
 	if tick.askPrice1 == tick.lowerLimit or tick.bidPrice1 == tick.upperLimit:
-	    self.putEvent()
 	    return 
 	if self.isStop :
-	    self.putEvent()
 	    return
 	for i in range(0,len(self.buyPrice)):
 	    if self.direction == 'long':
@@ -155,7 +148,6 @@ class strategyGirdTrading(CtaTemplate):
 		    self.postoday[self.vtSymbol] = 0
 		    self.isStop = True
 		    self.saveParameter()
-		    self.putEvent()
 		    return
 		if self.buyPrice[i] >= self.AskPrice and self.postoday[self.vtSymbol] <(i+1)*self.openUnit :
 
@@ -173,7 +165,6 @@ class strategyGirdTrading(CtaTemplate):
 		    self.postoday[self.vtSymbol] = 0
 		    self.isStop = True
 		    self.saveParameter()
-		    self.putEvent()
 		    return
 		if self.buyPrice[i] <= self.BidPrice and self.postoday[self.vtSymbol] <(i+1)*self.openUnit :
 		    tradeID = self.short(self.BidPrice-self.slippage, self.openUnit, self.vtSymbol, self.closeFirst)
@@ -764,7 +755,6 @@ class strategyTimeQWidget(QtGui.QWidget):
 	screen = QtGui.QDesktopWidget().screenGeometry()
 	size = self.geometry()
 	self.move((screen.width() - size.width())/2, (screen.height() - size.height())/2)
-
 
 
 

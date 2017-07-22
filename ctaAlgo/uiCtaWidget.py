@@ -10,7 +10,6 @@ from eventEngine import *
 from ctaTradeTest import ParamWindow
 from strategyGirdTrading import ParamWindow2
 from CtpAndIB import ParamWindow3
-from Arbitrage import ParamWindow4
 import json
 import os
 
@@ -19,15 +18,14 @@ import os
 
 
 #========================================================================
-class strategyWindow(QtGui.QWidget):
+class strategyWindow(QtGui.QMainWindow):
 
-    def __init__(self, ParamWindow, ParamWindow2, ParamWindow3, ParamWindow4, CtaEngineManager=None):
-	super(strategyWindow, self).__init__()
+    def __init__(self,ParamWindow,ParamWindow2,ParamWindow3,CtaEngineManager=None):
+	super(strategyWindow,self).__init__()
 	self.setWindowTitle(u"策略类型")
 	self.pw = ParamWindow
 	self.gt = ParamWindow2
 	self.cai = ParamWindow3
-	self.abt = ParamWindow4
 	self.ce = CtaEngineManager
 	self.tradeTestButton =  QtGui.QPushButton(u"配置双合约套利策略",self)
 	self.tradeTestButton.clicked.connect(self.createTradeTest) 
@@ -35,33 +33,21 @@ class strategyWindow(QtGui.QWidget):
 	self.girdTradingButton.clicked.connect(self.createGirdTrading)
 	self.CtpAndIB =  QtGui.QPushButton(u"配置CTP IB套利策略",self)
 	self.CtpAndIB.clicked.connect(self.createCtpAndIB)
-	self.Arbitrage =  QtGui.QPushButton(u"配置价格比例套利策略",self)
-	self.Arbitrage.clicked.connect(self.createArbitrage)
 	self.moreStrategyCoding =  QtGui.QPushButton(u"更多策略开发中",self)
 	self.moreStrategyCoding.clicked.connect(self.coding) 
 	self.initUI()
 	
     def initUI(self):
-	self.resize(350, 480)
-	#self.tradeTestButton.move(50,20)
-	#self.tradeTestButton.resize(160,50)
-	#self.girdTradingButton.move(50,90)
-	#self.girdTradingButton.resize(160,50)
-	#self.CtpAndIB.move(50,160)
-	#self.CtpAndIB.resize(160,50)
-	#self.moreStrategyCoding.move(50,230)
-	#self.moreStrategyCoding.resize(160,50)
-
-
-	layout = QtGui.QGridLayout(self)
-	layout.addWidget(self.tradeTestButton,0,0)
-	layout.addWidget(self.girdTradingButton,1,0)
-	layout.addWidget(self.CtpAndIB,2,0)
-	layout.addWidget(self.Arbitrage,3,0)
-	layout.addWidget(self.moreStrategyCoding,4,0)
-	self.setLayout(layout)
+	self.resize(350, 350)
+	self.tradeTestButton.move(50,20)
+	self.tradeTestButton.resize(160,50)
+	self.girdTradingButton.move(50,90)
+	self.girdTradingButton.resize(160,50)
+	self.CtpAndIB.move(50,160)
+	self.CtpAndIB.resize(160,50)
+	self.moreStrategyCoding.move(50,230)
+	self.moreStrategyCoding.resize(160,50)
 	self.center()
-
     def createTradeTest(self):
 	self.pw.show()
     
@@ -71,9 +57,6 @@ class strategyWindow(QtGui.QWidget):
     def createCtpAndIB(self):
 	self.cai.show()
 
-    def createArbitrage(self):
-	self.abt.show()
-
     def coding(self):
 	pass
 
@@ -81,74 +64,6 @@ class strategyWindow(QtGui.QWidget):
 	screen = QtGui.QDesktopWidget().screenGeometry()
 	size = self.geometry()
 	self.move((screen.width() - size.width())/2, (screen.height() - size.height())/2)
-
-class MyConsole(QtGui.QWidget):  
-    def __init__(self,parent,l):  
-        QtGui.QWidget.__init__(self)  
-        self.parent = parent  
-        self.l = l
-        self.initUI()  
-               
-    def initUI(self):  
-
-
-	vbox1 = QtGui.QVBoxLayout()
-	for x in self.l:
-	    fileName = "parameter_" + x['name'] + '.json'
-	    d = {}
-	    with open(fileName, 'r') as f:
-		d = json.load(f)
-		f.close()
-	    symbols = d['postoday'].keys()
-	    label = [u'策略名\持仓'] + symbols
-	    newTable = QtGui.QTableWidget(1,3)
-	    newTable.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers) 
-	    newTable.setMaximumHeight(60)
-	    newTable.setHorizontalHeaderLabels(label)
-	    vbox1.addWidget(newTable)
-            newItem = QtGui.QTableWidgetItem(x['name'])  
-            newTable.setItem(0, 0, newItem)
-            newItem = QtGui.QTableWidgetItem(str(d['postoday'][symbols[0]]))  
-            newTable.setItem(0, 1, newItem)
-            newItem = QtGui.QTableWidgetItem(' ')  
-            newTable.setItem(0, 2, newItem)
-	    if len(symbols) == 2:
-                newItem = QtGui.QTableWidgetItem(str(d['postoday'][symbols[1]]))  
-                newTable.setItem(0, 2, newItem)
-
-	self.vbox = vbox1
-	self.setLayout(self.vbox)
-
-class thumbnailWindow(QtGui.QWidget):
-
-    def __init__(self, l, parent=None):  
-        QtGui.QMainWindow.__init__(self, parent)  
-     
-        console = MyConsole(self, l)  
-        console.setMinimumSize(350, 700)  
-          
-        scroll = QtGui.QScrollArea()  
-        scroll.setWidget(console)  
-        scroll.setAutoFillBackground(True)  
-        scroll.setWidgetResizable(True)  
-        vbox = QtGui.QVBoxLayout()  
-        vbox.addWidget(scroll)    
-        self.setLayout(vbox)  
- 
-	self.initUI()
-
-    def initUI(self):
-	self.setWindowTitle(u"策略持仓")
-	self.center()    
-        self.show()  
-
-    def center(self):
-	screen = QtGui.QDesktopWidget().screenGeometry()
-	self.resize(370,510)
-	size = self.geometry()
-	self.move((screen.width() - size.width())/2, (screen.height() - size.height())/2)
-
-
 	
 ########################################################################
 class CtaValueMonitor(QtGui.QTableWidget):
@@ -215,8 +130,6 @@ class CtaStrategyManager(QtGui.QGroupBox):
             self.paramWindow = ParamWindow(self.name,longsymbol,shortsymbol, ctaEngine)
 	elif className == "CtpAndIB":
             self.paramWindow = ParamWindow3(self.name,longsymbol,shortsymbol, ctaEngine)
-	elif className == "Arbitrage":
-            self.paramWindow = ParamWindow4(self.name,longsymbol,shortsymbol, ctaEngine)
 	else:
 	    self.paramWindow = ParamWindow2(self.name, direction, vtSymbol, ctaEngine)
     #----------------------------------------------------------------------
@@ -343,7 +256,6 @@ class CtaEngineManager(QtGui.QWidget):
 	self.pw = ParamWindow("","","",self)
 	self.gt = ParamWindow2("","","",self)
 	self.cai = ParamWindow3("","","",self)
-	self.abt = ParamWindow4("","","",self)
         #self.sw = strategyWindow(self.pw, self.gt,self.cai)
         self.initUi()
         self.registerEvent()
@@ -361,14 +273,12 @@ class CtaEngineManager(QtGui.QWidget):
         startAllButton = QtGui.QPushButton(u'全部启动')
         stopAllButton = QtGui.QPushButton(u'全部停止')
 	addStrategy = QtGui.QPushButton(u'添加策略')
-	thumbnail = QtGui.QPushButton(u'策略持仓')
         
         loadButton.clicked.connect(self.load)
         initAllButton.clicked.connect(self.initAll)
         startAllButton.clicked.connect(self.startAll)
         stopAllButton.clicked.connect(self.stopAll)
 	addStrategy.clicked.connect(self.addStrategy)
-	thumbnail.clicked.connect(self.thumbnail)
         # 滚动区域，放置所有的CtaStrategyManager
         self.scrollArea = QtGui.QScrollArea()
         self.scrollArea.setWidgetResizable(True)
@@ -385,7 +295,6 @@ class CtaEngineManager(QtGui.QWidget):
         hbox2.addWidget(startAllButton)
         hbox2.addWidget(stopAllButton)
 	hbox2.addWidget(addStrategy)
-	hbox2.addWidget(thumbnail)
         hbox2.addStretch()
         
         vbox = QtGui.QVBoxLayout()
@@ -405,8 +314,6 @@ class CtaEngineManager(QtGui.QWidget):
 	    if p.className == 'tradeTest' :
                 strategyManager = CtaStrategyManager(self.ctaEngine, self.eventEngine, name, p.className, '', '', p.longsymbol, p.shortsymbol)
 	    elif p.className == 'CtpAndIB' :
-		strategyManager = CtaStrategyManager(self.ctaEngine, self.eventEngine, name, p.className, '', '', p.longsymbol, p.shortsymbol)
-	    elif p.className == 'Arbitrage' :
 		strategyManager = CtaStrategyManager(self.ctaEngine, self.eventEngine, name, p.className, '', '', p.longsymbol, p.shortsymbol)
 	    else:
 		strategyManager = CtaStrategyManager(self.ctaEngine, self.eventEngine, name, p.className, p.direction, p.vtSymbol, '', '')
@@ -437,24 +344,11 @@ class CtaEngineManager(QtGui.QWidget):
           
     #----------------------------------------------------------------------
     
-    def thumbnail(self):
-        settingFileName = 'CTA_setting.json'
-        path = os.path.abspath(os.path.dirname(__file__))
-        settingFileName = os.path.join(path, settingFileName)
-	l = []
-	with open(settingFileName, 'r') as f:
-	    l = json.load(f)
-	    f.close()
-	self.tw = thumbnailWindow(l)
-	self.tw.show()
-
-
     def addStrategy(self):
 	self.pw = ParamWindow("","","",self.ctaEngine)
 	self.gt = ParamWindow2("","","",self.ctaEngine)
 	self.cai = ParamWindow3("","","",self.ctaEngine)
-	self.abt = ParamWindow4("","","",self.ctaEngine)
-	self.sw = strategyWindow(self.pw, self.gt, self.cai, self.abt)
+	self.sw = strategyWindow(self.pw, self.gt,self.cai)
 	self.sw.show()
  
 
@@ -488,4 +382,3 @@ class CtaEngineManager(QtGui.QWidget):
 
     
     
-

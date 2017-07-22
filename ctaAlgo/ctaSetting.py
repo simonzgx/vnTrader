@@ -12,15 +12,11 @@
 from ctaTradeTest import tradeTest
 from strategyGirdTrading import strategyGirdTrading
 from CtpAndIB import CtpAndIB
-from Arbitrage import Arbitrage
-#from simpleEMA import simpleEMA
 #from ctaTradeTest1 import tradeTest1
 STRATEGY_TYPE = {}
 STRATEGY_TYPE["tradeTest"] = tradeTest
 STRATEGY_TYPE['theGirdTrading'] = strategyGirdTrading
 STRATEGY_TYPE['CtpAndIB'] = CtpAndIB
-STRATEGY_TYPE['Arbitrage'] = Arbitrage
-#STRATEGY_TYPE['simpleEMA'] = simpleEMA
 
 
 
