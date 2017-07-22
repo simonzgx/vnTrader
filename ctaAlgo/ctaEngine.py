@@ -123,7 +123,7 @@ class CtaEngine(object):
 	    l.append(setting)
 	    json.dump(l, f)
 	    f.close()
-    
+
     def chStrategy(self,setting, strategyName=None, strategyType=None):
 	with open(self.settingFileName,'r') as f:
             l = json.load(f)
