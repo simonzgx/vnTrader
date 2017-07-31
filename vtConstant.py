@@ -68,7 +68,7 @@ EXCHANGE_SMART = 'SMART'       # IB智能路由（股票、期权）
 EXCHANGE_NYMEX = 'NYMEX'       # IB 期货
 EXCHANGE_GLOBEX = 'GLOBEX'     # CME电子交易平台
 EXCHANGE_IDEALPRO = 'IDEALPRO' # IB外汇ECN
-
+EXCHANGE_INE = 'INE'
 EXCHANGE_CME = 'CME'           # CME交易所
 EXCHANGE_ICE = 'ICE'           # ICE交易所
 
