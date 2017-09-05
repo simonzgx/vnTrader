@@ -135,6 +135,20 @@ class CtaEngine(object):
 	    json.dump(l, f)
 	    f.close()
 
+    def getPrice(self, price, priceTick):
+	i = 0
+	while priceTick%1 != 0:
+	    priceTick *= 10
+	    price *= 10
+	    i += 1
+	price = price - price%1
+	price = price - price%priceTick
+	while i > 0 :
+	    price /= 10
+	    i -= 1
+	return price
+	
+
 #==============================================================================
 #==============================================================================
 #==============================================================================
@@ -143,7 +157,8 @@ class CtaEngine(object):
         req = VtOrderReq()
         req.symbol = contract.symbol
         req.exchange = contract.exchange
-        req.price = price - price%contract.priceTick
+        #req.price = self.getPrice(float(price), float(contract.priceTick))
+	req.price = price
         req.volume = volume
         if isMKT :
 	    req.priceType = PRICETYPE_MARKETPRICE
@@ -171,7 +186,11 @@ class CtaEngine(object):
         req = VtOrderReq()
         req.symbol = contract.symbol
         req.exchange = contract.exchange
-        req.price = price - price%contract.priceTick
+	priceTick = contract.priceTick
+	print price, priceTick
+        req.price = self.getPrice(float(price), float(priceTick))
+	#req.price = price
+	print type(req.price)
         req.volume = volume
         closeFirst = strategy.closeFirst
         req.productClass = strategy.productClass

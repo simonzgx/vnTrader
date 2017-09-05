@@ -71,6 +71,7 @@ statusMap[STATUS_ALLTRADED] = defineDict["THOST_FTDC_OST_AllTraded"]
 statusMap[STATUS_PARTTRADED] = defineDict["THOST_FTDC_OST_PartTradedQueueing"]
 statusMap[STATUS_NOTTRADED] = defineDict["THOST_FTDC_OST_NoTradeQueueing"]
 statusMap[STATUS_CANCELLED] = defineDict["THOST_FTDC_OST_Canceled"]
+STATUS_REJECTED = u'订单被拒'
 statusMapReverse = {v:k for k,v in statusMap.items()}
 ########################################################################
 class CtpGateway(VtGateway):
