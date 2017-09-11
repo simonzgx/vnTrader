@@ -49,12 +49,12 @@ def todayDate():
     return datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)   
 
 
-def emailSender(receivers, all_text, event_subject):
+def emailSender(receivers,all_text,event_subject):
 	# 第三方 SMTP 服务
+	print 'text'
 	mail_host = "smtpdm.aliyun.com"  # 设置服务器
 	mail_user = "tb@mail.wokens.com"  # 用户名
 	mail_pass = "wokens6666"  # 口令
-
 	sender = 'tb@mail.wokens.com'
 
 	message = MIMEText(all_text, 'plain', 'utf-8')  # 邮件内容
@@ -63,20 +63,15 @@ def emailSender(receivers, all_text, event_subject):
 
 	message['Subject'] = Header(event_subject, 'utf-8')#标题
 
-	try:
-		if receivers:
-			smtpObj = smtplib.SMTP()
-			smtpObj.connect(mail_host, 25)
-			smtpObj.login(mail_user, mail_pass)
-			# message['To'] = Header(receivers[0], 'utf-8')  # 收件人
-			smtpObj.sendmail(sender, receivers, message.as_string())
-			#for receiver in receivers:
-			#	message['To'] = Header(receiver, 'utf-8')  # 收件人
-			#	smtpObj.sendmail(sender, receiver, message.as_string())
-			print("邮件发送成功")
-		else:
-			pass
-	except smtplib.SMTPException:
-		print("Error: 无法发送邮件")
+	#try:
+	smtpObj = smtplib.SMTP()
+	smtpObj.connect(mail_host, 25)
+	smtpObj.login(mail_user, mail_pass)
+	for receiver in receivers:
+		message['To'] = Header(receiver, 'utf-8')  # 收件人
+		smtpObj.sendmail(sender, receiver, message.as_string())
+	print("邮件发送成功")
+	#except smtplib.SMTPException:
+		#print("Error: 无法发送邮件") 
 
  

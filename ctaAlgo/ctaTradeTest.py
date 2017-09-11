@@ -14,11 +14,12 @@
 import json
 from ctaBase import *
 from ctaTemplate import CtaTemplate
-import smtplib
+from vtFunction import emailSender
 from uiBasicWidget import *
 import re
 import numpy as np
 import datetime
+import smtplib
 ########################################################################
 class tradeTest(CtaTemplate):
     """策略"""
@@ -30,31 +31,23 @@ class tradeTest(CtaTemplate):
 
 
     # 策略变量
-    bar = {}
-    closelist={}
-    barMinute = {}
-    lasttick={}
 
-    bartime={}
-    signal={}
 
-    longsymbol=EMPTY_STRING
-    shortsymbol=EMPTY_STRING
-    poslimit=1
-    posstate={}
-    postoday={}         #今日持仓
-    tradestate={}       #交易状态
     tradeid=EMPTY_STRING
     cdnum=0
     
 #以下代码更新于2016/11/21==================
-
+    posstate={}
+    postoday={}         #今日持仓
+    tradestate={}       #交易状态
 
     longsymbolAskPrice = 0
     longsymbolBidPrice = 0
     shortsymbolAskPrice = 0
     shortsymbolBidPrice = 0	
-
+    tradeid=EMPTY_STRING
+    productClass = PRODUCT_FUTURES    # 产品类型（只有IB接口需要）
+    currency = CURRENCY_USD        # 货币（只有IB接口需要）
 #=========================================
     # 参数列表，保存了参数的名称
     paramList = ['name',
@@ -86,9 +79,9 @@ class tradeTest(CtaTemplate):
             self.postoday[vts]=0
             self.posstate[vts]=0
 	self.loadParameter()
-	self.isStart = False
         self.dfr = 0
         self.dfr_2 = 0
+	self.isStart = False
 	self.longCheckList = []
 	self.shortCheckList = []
 	self.second = -1
@@ -109,22 +102,21 @@ class tradeTest(CtaTemplate):
         
     #----------------------------------------------------------------------
     def onStart(self):
-	self.isStart = True
         self.loadParameter()
 	self.loadPosInfo()
+	self.isStart = True
         """启动策略（必须由用户继承实现）"""
         self.writeCtaLog(u'策略启动')
         self.putEvent()
     
     #----------------------------------------------------------------------
     def onStop(self):
-	self.isStart = False
 	self.filterDic = {}
 	self.loadPosInfo()
         self.saveParameter()
+	self.isStart = False
         """停止策略（必须由用户继承实现）"""
-	log = self.name + u'策略停止'
-        self.writeCtaLog(log)
+        self.writeCtaLog(u'macdpbx策略停止')
         self.putEvent()
     #----------------------------------------------------------------------
     def onOrder(self, order):
@@ -136,10 +128,9 @@ class tradeTest(CtaTemplate):
     def onTick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
         # 计算K线
-	
 	if not self.isTrade():
 	    self.putEvent()
-	    return
+	    return	
 	if tick.bidPrice1 == 0 or tick.askPrice1 == 0:
 	    self.putEvent()
 	    return
@@ -152,7 +143,6 @@ class tradeTest(CtaTemplate):
 	    self.second = now.second
 	    self.longCheckList = []
 	    self.shortCheckList = []
-
 #2016/11/21=============================================================
         if tick.vtSymbol==self.shortsymbol :
 	    if self.shortsymbolAskPrice == 0 and tick.askPrice1>0:
@@ -182,22 +172,27 @@ class tradeTest(CtaTemplate):
 		pass
         self.dfr = self.shortsymbolBidPrice*self.shortPriceCoe - self.longsymbolAskPrice*self.longPriceCoe        
         self.dfr_2 = self.shortsymbolAskPrice*self.shortPriceCoe - self.longsymbolBidPrice*self.longPriceCoe
-	if not self.isStart:
-	    self.putEvent()
-	    return
 	if tick.askPrice1 == tick.lowerLimit or tick.bidPrice1 == tick.upperLimit:
 	    self.putEvent()
 	    return 
+	if not self.isStart :
+	    self.putEvent()
+	    return
 	if self.isStop:
 	    self.putEvent()
 	    return
         if self.shortsymbolAskPrice!=0 and self.longsymbolAskPrice!=0 and self.shortsymbolBidPrice!=0 and self.longsymbolBidPrice!=0:
 	    if self.dfr > self.stpLos:
-	        tradeId = self.cover(self.shortsymbolAskPrice+self.slippage, self.postoday[self.shortsymbol], self.shortsymbol)    
+	        logs = u'策略 ' + self.name + u' 触发止损,' +  u'停止运行！'
+		title = logs
+		text = u'当前价差 ' + str(self.dfr)+'\r\n' + u'当前持仓 ：' + self.shortsymbol + ' : ' + str(self.postoday[self.shortsymbol]) + '\r\n'
+		text = text + self.longsymbol + ' : ' + str(self.postoday[self.longsymbol])
+		thread = threading.Thread(target=emailSender, args=(self.receivers, text, title))
+		thread.start()
+	        tradeId = self.cover(self.shortsymbolAskPrice+self.shortSlippage, self.postoday[self.shortsymbol], self.shortsymbol)    
 	        self.postoday[self.shortsymbol] = 0
-	        tradeId = self.sell(self.longsymbolBidPrice-self.slippage, self.postoday[self.longsymbol], self.longsymbol)   
+	        tradeId = self.sell(self.longsymbolBidPrice-self.longSlippage, self.postoday[self.longsymbol], self.longsymbol)   
 	        self.postoday[self.longsymbol] = 0
-	        logs = u'策略 ' + self.name + u' 触发止损 ' +  u' 停止运行！'
 	        self.isStop = True
 	        self.writeCtaLog(logs)
 	        self.saveParameter()
@@ -213,7 +208,7 @@ class tradeTest(CtaTemplate):
 			return
 		    else :
 			self.shortCheckList.append(i)
-		    tradeId = self.short(self.shortsymbolBidPrice-self.slippage, self.shortBuyUnit, self.shortsymbol)
+		    tradeId = self.short(self.shortsymbolBidPrice-self.shortSlippage,self.shortBuyUnit,self.shortsymbol)
 		    
 		    self.postoday[self.shortsymbol] += self.shortBuyUnit
 		    self.saveParameter()
@@ -223,14 +218,15 @@ class tradeTest(CtaTemplate):
 			self.isStart = False
 			self.writeCtaLog(logs)
 			self.putEvent()
+
 			return
 		    else :
 			self.longCheckList.append(i)
-		    tradeId = self.buy(self.longsymbolAskPrice+self.slippage, self.longBuyUnit, self.longsymbol)
+		    tradeId = self.buy(self.longsymbolAskPrice+self.longSlippage, self.longBuyUnit, self.longsymbol)
 		    
 		    self.postoday[self.longsymbol] += self.longBuyUnit
 		    self.saveParameter()
-	        if self.dfr_2 <= self.buyPrice[i] - self.stpProfit and self.postoday[self.shortsymbol]> i*self.shortBuyUnit :
+	        if self.dfr_2 <= self.buyPrice[i] - self.stpProfit and self.postoday[self.shortsymbol]> i*self.shortBuyUnit :	
 		    if i in self.shortCheckList:
 			logs = u'策略' + self.name + u'在1秒内重复开单 ' + self.shortsymbol + u'停止运行！'
 			self.isStart = False
@@ -238,8 +234,8 @@ class tradeTest(CtaTemplate):
 			self.putEvent()
 			return
 		    else :
-			self.shortCheckList.append(i)	
-		    tradeId = self.cover(self.shortsymbolAskPrice+self.slippage, self.shortBuyUnit, self.shortsymbol)
+			self.shortCheckList.append(i)
+		    tradeId = self.cover(self.shortsymbolAskPrice+self.shortSlippage, self.shortBuyUnit, self.shortsymbol)
 		    
 		    self.postoday[self.shortsymbol] -= self.shortBuyUnit
 		    self.saveParameter()
@@ -252,7 +248,7 @@ class tradeTest(CtaTemplate):
 			return
 		    else :
 			self.longCheckList.append(i)
-		    tradeId = self.sell(self.longsymbolBidPrice-self.slippage, self.longBuyUnit, self.longsymbol)
+		    tradeId = self.sell(self.longsymbolBidPrice-self.longSlippage, self.longBuyUnit, self.longsymbol)
 		    
 		    self.postoday[self.longsymbol] -= self.longBuyUnit
 		    self.saveParameter()
@@ -281,7 +277,6 @@ class tradeTest(CtaTemplate):
 		    return True
 	return False
 
-
     def doFilter(self, tick):
 	if tick.vtSymbol not in self.filterDic.keys():
 	    self.filterDic[tick.vtSymbol] = {'ask':[], 'bid':[]}
@@ -303,19 +298,7 @@ class tradeTest(CtaTemplate):
 
 #----------------------------------------------------------------------
     def onBar(self, bar):
-        """收到Bar推送（必须由用户继承实现）"""
-
-        #计算基础变量macd，pbx .by hw
-        vtsymbol=bar.vtSymbol
-        if vtsymbol in self.closelist.keys():
-            l=self.closelist[vtsymbol]
-        else:
-            l=[]
-            self.closelist[vtsymbol]=l
-
-        l.append(bar.close)           
-        # 发出状态更新事件
-        self.putEvent()
+	pass
 
     #----------------------------------------------------------------------
     def onOrder(self, order):
@@ -327,13 +310,7 @@ class tradeTest(CtaTemplate):
     def onTrade(self, trade):
         """收到成交推送（必须由用户继承实现）"""
         # 对于无需做细粒度委托控制的策略，可以忽略onOrder
-
-        #self.postoday[trade.vtSymbol]=self.postoday[trade.vtSymbol]+self.tradestate[trade.vtSymbol]
-        #self.tradestate[trade.vtSymbol]=0
         print 'trade',trade.vtSymbol,self.postoday[trade.vtSymbol],self.tradestate[trade.vtSymbol]
-
-        all_text = "trade: " + trade.vtSymbol 
-        title = u"策略 " + self.className + u' 成交信息'
         self.saveParameter()
     def loadParameter(self) :
 
@@ -342,16 +319,17 @@ class tradeTest(CtaTemplate):
             param = json.load(f)
 	self.closeFirst = param['closeFirst']
         self.stpProfit = param["stpProfit"]
-        self.slippage = param["slippage"]
+        self.longSlippage = param["longSlippage"]
+	self.shortSlippage = param["shortSlippage"]
         self.buyPrice = param["buyPrice"]
         self.postoday = param["postoday"]
-	self.isStop = param['isStop']
-	self.stpLos = param['stpLos']
         self.shortBuyUnit = param['shortBuyUnit']
         self.longBuyUnit = param['longBuyUnit']
         self.shortPriceCoe = param['shortPriceCoe']
         self.longPriceCoe = param['longPriceCoe']
         self.receivers = param['receivers']
+	self.isStop = param['isStop']
+	self.stpLos = param['stpLos']
 	self.tradeTime = param['tradeTime']
 	self.isFilter = param['isFilter']
 	if self.isFilter == True:
@@ -362,10 +340,10 @@ class tradeTest(CtaTemplate):
         param = {}
 	param['closeFirst'] = self.closeFirst
         param["stpProfit"] = self.stpProfit
-        param["slippage"] = self.slippage
+        param["longSlippage"] = self.longSlippage
+        param["shortSlippage"] = self.shortSlippage
         param["buyPrice"] = self.buyPrice
         param["postoday"] = self.postoday
-	param['stpLos'] = self.stpLos
         param['shortBuyUnit'] = self.shortBuyUnit
         param['longBuyUnit'] = self.longBuyUnit
         param['shortPriceCoe'] = self.shortPriceCoe
@@ -374,18 +352,18 @@ class tradeTest(CtaTemplate):
 	param['tradeTime'] = self.tradeTime
 	param['isFilter'] = self.isFilter
 	param['isStop'] = self.isStop
+	param['stpLos'] = self.stpLos
 	if param['isFilter'] == True:
 	    param['var'] = self.var
 	d1 = json.dumps(param,sort_keys=True,indent=4)
         with open(self.fileName, "w") as f:
             f.write(d1)
 	    f.close()
-
 ########################################################################################
 class ParamWindow(QtGui.QWidget):
     def __init__(self,name=None, longsymbol=None, shortsymbol=None,ctaEngine=None):
 	super(ParamWindow,self).__init__()
-	self.resize(350, 480)
+	self.resize(365, 500)
 	self.shortsymbol = shortsymbol
 	self.longsymbol = longsymbol
 	self.ce = ctaEngine
@@ -404,6 +382,10 @@ class ParamWindow(QtGui.QWidget):
 	self.onInit()
 
     def onInit(self):
+	self.saveButton.resize(50, 27)
+	self.cancelButton.resize(50, 27)
+	self.saveButton.move(220,450)
+	self.cancelButton.move(280,450)
 	self.saveButton.clicked.connect(self.saveParameter)
 	self.cancelButton.clicked.connect(self.cancel) 
 	self.initLabel()
@@ -426,22 +408,27 @@ class ParamWindow(QtGui.QWidget):
 	
 	self.closeFirst = QtGui.QCheckBox(u'平仓优先',self)
 	layout.addWidget(self.closeFirst,0,5,1,7)
+
 	label_longsymbol = QtGui.QLabel(u"多方向合约",self)
 	self.lineEdit_label_longsymbol = QtGui.QLineEdit(self)
 	layout.addWidget(self.lineEdit_label_longsymbol,1,1,1,3)
 	layout.addWidget(label_longsymbol,1,0)
- 
+
 	label_longBuyUnit = QtGui.QLabel(u"    每笔数量",self)
 	self.lineEdit_label_longBuyUnit = QtGui.QLineEdit(self)
+	longSlippage = QtGui.QLabel(u"滑点", self)
+	self.lineEdit_label_longSlippage = QtGui.QLineEdit(self)
 	layout.addWidget(label_longBuyUnit,2,0)
 	layout.addWidget(self.lineEdit_label_longBuyUnit,2,1,1,3)
+	layout.addWidget(longSlippage,2,5,1,1)
+	layout.addWidget(self.lineEdit_label_longSlippage,2,7,1,2)
 
 	label_longPriceCoe = QtGui.QLabel(u"    价格系数",self)
 	self.lineEdit_label_longPriceCoe = QtGui.QLineEdit(self)
 	layout.addWidget(label_longPriceCoe,3,0)
 	layout.addWidget(self.lineEdit_label_longPriceCoe,3,1,1,3)
 
-	label_longPosition = QtGui.QLabel(u"    当前持仓", self)
+	label_longPosition = QtGui.QLabel(u"    当前持仓量", self)
 	self.lineEdit_label_longPosition = QtGui.QLineEdit(self)
 	layout.addWidget(label_longPosition,4,0)
 	layout.addWidget(self.lineEdit_label_longPosition,4,1,1,3)
@@ -451,10 +438,16 @@ class ParamWindow(QtGui.QWidget):
 	layout.addWidget(label_shortsymbol,5,0)
 	layout.addWidget(self.lineEdit_label_shortsymbol,5,1,1,3)
 
+
 	label_shortBuyUnit = QtGui.QLabel(u"    每笔数量", self)
 	self.lineEdit_label_shortBuyUnit = QtGui.QLineEdit(self)
+	shortSlippage = QtGui.QLabel(u"滑点", self)
+	self.lineEdit_label_shortSlippage = QtGui.QLineEdit(self)
 	layout.addWidget(label_shortBuyUnit,6,0)
 	layout.addWidget(self.lineEdit_label_shortBuyUnit,6,1,1,3)
+	layout.addWidget(shortSlippage,6,5,1,1)
+	layout.addWidget(self.lineEdit_label_shortSlippage,6,7,1,2)
+
 
 	label_shortPriceCoe = QtGui.QLabel(u"    价格系数", self)
 	self.lineEdit_label_shortPriceCoe = QtGui.QLineEdit(self)
@@ -462,7 +455,7 @@ class ParamWindow(QtGui.QWidget):
 	layout.addWidget(label_shortPriceCoe,7,0)
 	layout.addWidget(self.lineEdit_label_shortPriceCoe,7,1,1,3)
 
-	label_shortPosition = QtGui.QLabel(u"   当前持仓", self)
+	label_shortPosition = QtGui.QLabel(u"   当前持仓量", self)
 	self.lineEdit_label_shortPosition = QtGui.QLineEdit(self)
 	layout.addWidget(label_shortPosition,8,0)
 	layout.addWidget(self.lineEdit_label_shortPosition,8,1,1,3)
@@ -482,11 +475,6 @@ class ParamWindow(QtGui.QWidget):
 	layout.addWidget(self.isFilter,10,0)
 	layout.addWidget(self.lineEdit_label_var,10,1,1,3)
 
-	label_slippage = QtGui.QLabel(u"滑点", self)
-	self.lineEdit_label_slippage = QtGui.QLineEdit(self)
-	layout.addWidget(label_slippage,10,5,1,1)
-	layout.addWidget(self.lineEdit_label_slippage,10,7,1,2)
-
 	label_mail = QtGui.QLabel(u"邮箱", self)
 	self.lineEdit_label_mail = QtGui.QLineEdit(self)
 	layout.addWidget(label_mail,11,0)
@@ -501,7 +489,6 @@ class ParamWindow(QtGui.QWidget):
 	self.tradeTimeButton.clicked.connect(self.tradeTimeWidget)
 	layout.addWidget(self.tradeTimeButton,13,0)
 
-
 	layout.addWidget(self.saveButton,15,7)
 	layout.addWidget(self.cancelButton,15,8)
 
@@ -512,7 +499,6 @@ class ParamWindow(QtGui.QWidget):
 	    self.saveParameter()
 	self.st = strategyTimeQWidget(self)
 	self.st.show()
-
 
     def center(self):
 	screen = QtGui.QDesktopWidget().screenGeometry()
@@ -529,7 +515,8 @@ class ParamWindow(QtGui.QWidget):
 	self.lineEdit_label_shortPriceCoe.setText(str(self.paramters["shortPriceCoe"]))
 	self.lineEdit_label_shortPosition.setText(str(self.paramters["postoday"][self.shortsymbol]))
 	self.lineEdit_label_stpProfit.setText(str(self.paramters["stpProfit"]))
-	self.lineEdit_label_slippage.setText(str(self.paramters["slippage"]))
+	self.lineEdit_label_longSlippage.setText(str(self.paramters["longSlippage"]))
+	self.lineEdit_label_shortSlippage.setText(str(self.paramters["shortSlippage"]))
 	self.lineEdit_label_stpLos.setText(str(self.paramters["stpLos"]))
 	if self.paramters['closeFirst'] == True:
 	    self.closeFirst.setChecked(True)
@@ -569,17 +556,24 @@ class ParamWindow(QtGui.QWidget):
 	return param
 
     def saveParameter(self) :
-	
 	self.paramters = self.loadParameter()
 	try :
-	    self.paramters["stpProfit"] = int(self.lineEdit_label_stpProfit.text())
+	    self.paramters["stpProfit"] = float(self.lineEdit_label_stpProfit.text())
 	except ValueError:
 	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'止赢应该是一个数字！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
 	    return
 
+
 	try:	
-	    self.paramters["slippage"] = int(self.lineEdit_label_slippage.text())
+	    self.paramters["longSlippage"] = float(self.lineEdit_label_longSlippage.text())
+	except ValueError:
+	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
+                                           u'滑点应该是一个数字！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
+	    return
+
+	try:	
+	    self.paramters["shortSlippage"] = float(self.lineEdit_label_shortSlippage.text())
 	except ValueError:
 	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'滑点应该是一个数字！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
@@ -656,18 +650,19 @@ class ParamWindow(QtGui.QWidget):
                                            u'请正确填写longsymbol的开仓手数！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes) 
 	    return
 	try:
-	    self.paramters['shortPriceCoe'] = int(self.lineEdit_label_shortPriceCoe.text())
+	    self.paramters['shortPriceCoe'] = float(self.lineEdit_label_shortPriceCoe.text())
 	except ValueError:
 	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'请正确填写shortsymbol的系数！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes) 
 	    return
 	try:
-	    self.paramters['longPriceCoe'] = int(self.lineEdit_label_longPriceCoe.text())
+	    self.paramters['longPriceCoe'] = float(self.lineEdit_label_longPriceCoe.text())
 	except ValueError:
 	    reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'请正确填写longsymbol的系数！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes) 
 	    return
 	self.paramters["postoday"] = pos
+
 	if self.closeFirst.isChecked():
 	    self.paramters['closeFirst'] = True
 	else :
@@ -684,6 +679,7 @@ class ParamWindow(QtGui.QWidget):
 	        reply = QtGui.QMessageBox.question(self, u'ERROR!',
                                            u'波动率应该是一个数字！', QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
 	        return
+
 
 	rec = []
 	m = ""
@@ -705,7 +701,7 @@ class ParamWindow(QtGui.QWidget):
 	    else :
 	        self.strategyName = self.strategyname_label.text()
 	    self.fileName = "parameter_" + self.strategyName + ".json"
-	    self.paramters['isStop'] = False
+     	    self.paramters['isStop'] = False
 	    with open(self.fileName, 'a') as f:
 		f.write("{}")
 		f.close()
@@ -714,7 +710,6 @@ class ParamWindow(QtGui.QWidget):
 	self.paramters['isStop'] = False
 
 	d1 = json.dumps(self.paramters,sort_keys=True,indent=4)
-
 	with open(self.fileName, "w") as f:
 	    
 	    f.write(d1)
@@ -724,6 +719,7 @@ class ParamWindow(QtGui.QWidget):
 	self.setting['longSymbol'] = str(self.lineEdit_label_longsymbol.text())
 	self.setting['shortSymbol'] = str(self.lineEdit_label_shortsymbol.text())
 	self.setting['vtSymbol'] = self.setting['longSymbol'] + ',' + self.setting['shortSymbol']
+	self.ce.chStrategy(self.setting,self.strategyName)
 	f = 0
 	if self.name == "" and self.firstSave :
 	    f = self.ce.addStrategy(self.setting,self.strategyName)
@@ -732,6 +728,7 @@ class ParamWindow(QtGui.QWidget):
 	    self.setting['name'] = self.name
 	if f != -1:
 	    self.ce.chStrategy(self.setting,self.strategyName)
+
 class myButton(QtGui.QPushButton):
 
     def __init__(self, tag, name, buttonType, strategyTimeQWidget, parent):
@@ -875,9 +872,6 @@ class strategyTimeQWidget(QtGui.QWidget):
 	screen = QtGui.QDesktopWidget().screenGeometry()
 	size = self.geometry()
 	self.move((screen.width() - size.width())/2, (screen.height() - size.height())/2)
-
-
-
 
 
 

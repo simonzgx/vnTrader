@@ -1,12 +1,28 @@
 # encoding: UTF-8
 
 import time
+import threading
 
 from eventEngine import *
 from vtFunction import emailSender
 from vtConstant import *
 
 
+
+
+class VtMailReq(object):
+
+    def __init__(self, title, text, strategyName):
+	self.title = title
+	self.text = text
+	self.strategyName = strategyName
+
+
+class VtMailManagerReq(object):
+
+    def __init__(self):
+	self.strategyNameList = []
+	self.mailList = []
 ########################################################################
 class VtGateway(object):
     """交易接口"""
@@ -16,7 +32,7 @@ class VtGateway(object):
         """Constructor"""
         self.eventEngine = eventEngine
         self.gatewayName = gatewayName
-        
+	self.mailDict = {}
     #----------------------------------------------------------------------
     def onTick(self, tick):
         """市场行情推送"""
@@ -42,12 +58,28 @@ class VtGateway(object):
         event2 = Event(type_=EVENT_TRADE+trade.vtSymbol)
         event2.dict_['data'] = trade
         self.eventEngine.put(event2)  
-	if receivers!=None and strategyName!=None :
-	    title =  u'账户:' + userID + u"成交回报"
-	    text =  u'策略名: ' + strategyName + "  symbol: "+ trade.vtSymbol + u"  方向: " + trade.direction + u"  类型: " + trade.offset + u"  数量: " + str(trade.volume) + u"  成交价格: " + str(trade.price)
+	if receivers!='' and strategyName!='' :
+	    title =  u' 账户:' + userID + u'策略:' + strategyName + u" 成交回报"
+	    text =  "  symbol: "+ trade.vtSymbol + u"  方向: " + trade.direction + u"  类型: " + trade.offset + u"  数量: " + str(trade.volume) + u"  成交价格: " + str(trade.price)
+	    mailItem = VtMailReq(title, text, strategyName)
+	    if strategyName not in self.mailDict.keys():
+		self.mailDict[strategyName] = []
+	        self.mailDict[strategyName].append(mailItem)
+		thread = threading.Thread(target=self.sendMail, args=(receivers, strategyName))
+		thread.start()
+	    else :
+		self.mailDict[strategyName].append(mailItem)
 
-            emailSender(receivers, text, title)      
-    
+    def sendMail(self, receivers, strategyName):
+	time.sleep(5)
+	mails = self.mailDict[strategyName]
+	title = mails[0].title
+	text = ''
+	for x in mails:
+	    text = text + '\r\n' + x.text
+	self.mailDict.pop(strategyName)
+	emailSender(receivers, text, title)
+
     #----------------------------------------------------------------------
     def onOrder(self, order):
         """订单变化推送"""
@@ -435,9 +467,8 @@ class VtCancelOrderReq(object):
         self.orderID = EMPTY_STRING             # 报单号
         self.frontID = EMPTY_STRING             # 前置机号
         self.sessionID = EMPTY_STRING           # 会话号
-  
-    
-    
+
+
     
     
     

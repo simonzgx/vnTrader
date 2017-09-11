@@ -183,11 +183,16 @@ class CtpAndIB(CtaTemplate):
 	    return
         if self.shortsymbolAskPrice!=0 and self.longsymbolAskPrice!=0 and self.shortsymbolBidPrice!=0 and self.longsymbolBidPrice!=0:
 	    if self.dfr > self.stpLos:
+	        logs = u'策略 ' + self.name + u' 触发止损,' +  u'停止运行！'
+		title = logs
+		text = u'当前价差 ' + str(self.dfr)+'\r\n' + u'当前持仓 ：' + self.shortsymbol + ' : ' + str(self.postoday[self.shortsymbol]) + '\r\n'
+		text = text + self.longsymbol + ' : ' + str(self.postoday[self.longsymbol])
+		thread = threading.Thread(target=emailSender, args=(self.receivers, text, title))
+		thread.start()
 	        tradeId = self.cover(self.shortsymbolAskPrice+self.shortSlippage, self.postoday[self.shortsymbol], self.shortsymbol)    
 	        self.postoday[self.shortsymbol] = 0
 	        tradeId = self.sell(self.longsymbolBidPrice-self.longSlippage, self.postoday[self.longsymbol], self.longsymbol)   
 	        self.postoday[self.longsymbol] = 0
-	        logs = u'策略 ' + self.name + u' 触发止损 ' +  u' 停止运行！'
 	        self.isStop = True
 	        self.writeCtaLog(logs)
 	        self.saveParameter()

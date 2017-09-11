@@ -187,10 +187,7 @@ class CtaEngine(object):
         req.symbol = contract.symbol
         req.exchange = contract.exchange
 	priceTick = contract.priceTick
-	print price, priceTick
         req.price = self.getPrice(float(price), float(priceTick))
-	#req.price = price
-	print type(req.price)
         req.volume = volume
         closeFirst = strategy.closeFirst
         req.productClass = strategy.productClass
