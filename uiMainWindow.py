@@ -62,8 +62,51 @@ class connectIBWindow(QtGui.QDialog):
 	size = self.geometry()
 	self.move((screen.width() - size.width())/2, (screen.height() - size.height())/2)
 
+class addConnectionWindow(QtGui.QDialog):
 
+    def __init__(self):
+        super(addConnectionWindow, self).__init__()
+	self.resize(380,160)
+	self.saveButton = QtGui.QPushButton(u'保存', self)
+	self.saveButton.clicked.connect(self.saveConnect)
+	connectName = QtGui.QLabel(u'connectName', self)
+	tdAddress = QtGui.QLabel(u'TDAddress', self)
+	mdAddress = QtGui.QLabel(u'MDAddress', self)
+	brokerID = QtGui.QLabel(u'brokerID', self)
+	self.nameEdit = QtGui.QLineEdit(self)
+	self.tdAddressEdit = QtGui.QLineEdit(self)
+	self.mdAddressEdit = QtGui.QLineEdit(self)
+	self.brokerIDEdit = QtGui.QLineEdit(self)
+	layout = QtGui.QGridLayout()
+	layout.addWidget(connectName,0,0)
+	layout.addWidget(self.nameEdit,0,1,1,2)
 
+	layout.addWidget(tdAddress,1,0)
+	layout.addWidget(self.tdAddressEdit,1,1,1,2)
+
+	layout.addWidget(mdAddress,2,0)
+	layout.addWidget(self.mdAddressEdit,2,1,1,2)
+
+	layout.addWidget(brokerID,3,0)
+	layout.addWidget(self.brokerIDEdit,3,1,1,2)
+	layout.addWidget(self.saveButton,4,0)
+	self.setLayout(layout)
+
+    def saveConnect(self):
+	with open("ctpGateway/connect_data.json", 'r') as f:
+	    self.connectData = json.load(f)
+	    f.close()
+	name = str(self.nameEdit.text())
+	newConnect = {}
+	newConnect['tdAddress'] = str(self.tdAddressEdit.text())
+	newConnect['mdAddress'] = str(self.mdAddressEdit.text())
+	newConnect['brokerID'] = str(self.brokerIDEdit.text())
+	if name not in self.connectData.keys():
+	    self.connectData[name] = newConnect
+	d = json.dumps(self.connectData,sort_keys=True,indent=4)
+	with open("ctpGateway/connect_data.json", 'w') as f:
+	    f.write(d)
+	    f.close()
 
 ########################################################################
 class connectCTPWindow(QtGui.QDialog):
@@ -78,15 +121,18 @@ class connectCTPWindow(QtGui.QDialog):
 	self.idEdit = QtGui.QLineEdit(self)
 	self.pwdEdit = QtGui.QLineEdit(self)
 	self.combo = QtGui.QComboBox(self)
-	self.combo.addItem(u'实盘行情')
-	self.combo.addItem(u'模拟行情')
-	self.combo.addItem(u'中信建投')
+	with open("ctpGateway/connect_data.json", 'r') as f:
+	    self.connectData = json.load(f)
+	    f.close()
+	for x in self.connectData.keys():
+	    self.combo.addItem(x)
 	self.hisUserCombo = QtGui.QComboBox(self)
 	self.addUsers()	
 	self.hisUserCombo.currentIndexChanged.connect(self.loadAccount)
 	self.isSaveAccount = QtGui.QCheckBox(u'记住帐号', self)
 	self.login = QtGui.QPushButton(u'登录', self)
-	self.cancel = QtGui.QPushButton(u'取消', self)
+	self.addConnection = QtGui.QPushButton(u'添加服务器', self)
+	self.addConnection.clicked.connect(self.addConnect)
 	self.login.clicked.connect(self.connect)
 	#self.cancel.clicked.connect(self.quit)
 
@@ -109,37 +155,21 @@ class connectCTPWindow(QtGui.QDialog):
 	layout.addWidget(self.combo,0,3)
 	layout.addWidget(self.isSaveAccount,3,1,1,1)
 	layout.addWidget(self.login,3,2,1,1)
-	layout.addWidget(self.cancel,3,3,1,1)
+	layout.addWidget(self.addConnection,3,3,1,1)
 	#layout.setMargin(10)
 	#layout.setSpacing(10)
 	self.setLayout(layout)
 
     def connect(self):
-	
-	simTDAddress = "tcp://180.168.146.187:10030"
-	simMDAddress = "tcp://180.168.146.187:10031"
-	tdAddress = "tcp://116.236.239.137:41205"
-	mdAddress = "tcp://116.236.239.137:41213"
-	zxjtTdAddress = 'tcp://180.166.25.17:41205'
-	zxjtMdAddress = 'tcp://180.166.25.17:41213'
 	userId = str(self.idEdit.text())
 	password = str(self.pwdEdit.text())
+	key = str(self.combo.currentText())
 	account = {}
 	account['userID'] = userId
 	account['password'] = password
-	if self.combo.currentText() == u'实盘行情':
-	    account['tdAddress'] = tdAddress
-	    account['mdAddress'] = mdAddress
-	    bookId = "7070"
-	elif self.combo.currentText() == u'模拟行情':
-	    account['tdAddress'] = simTDAddress
-	    account['mdAddress'] = simMDAddress
-	    bookId = "9999"
-	elif self.combo.currentText() == u'中信建投':
-	    account['tdAddress'] = zxjtTdAddress
-	    account['mdAddress'] = zxjtMdAddress
-	    bookId = '9080'
-	account['brokerID'] = bookId
+	account['tdAddress'] = self.connectData[key]['tdAddress']
+	account['mdAddress'] = self.connectData[key]['mdAddress']
+	account['brokerID'] = self.connectData[key]['brokerID']
 	d = json.dumps(account,sort_keys=True,indent=4)
 	with open('ctpGateway/CTP_connect.json', 'w') as f:
 	    f.write(d)
@@ -176,6 +206,9 @@ class connectCTPWindow(QtGui.QDialog):
 	self.idEdit.setText(userID)
 	self.pwdEdit.setText(self.dic[userID])
 
+    def addConnect(self):
+	self.connectWindow = addConnectionWindow()
+	self.connectWindow.show()
 
 
 class MainWindow(QtGui.QMainWindow):

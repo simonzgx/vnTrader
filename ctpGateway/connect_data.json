@@ -1,0 +1,12 @@
+{
+    "ZXJT": {
+        "brokerID": "9080", 
+        "mdAddress": "tcp://180.166.25.17:41213", 
+        "tdAddress": "tcp://180.166.25.17:41205"
+    }, 
+    "liveTrading": {
+        "brokerID": "7070", 
+        "mdAddress": "tcp://116.236.239.137:41213", 
+        "tdAddress": "tcp://116.236.239.137:41205"
+    }
+}
