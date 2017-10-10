@@ -225,6 +225,8 @@ class CtpAndIB(CtaTemplate):
 		    
 		    self.postoday[self.longsymbol] += self.longBuyUnit
 		    self.saveParameter()
+            for x in range(0,len(self.buyPrice)):
+		i = len(self.buyPrice)-1-x
 	        if self.dfr_2 <= self.buyPrice[i] - self.stpProfit and self.postoday[self.shortsymbol]> i*self.shortBuyUnit :	
 		    if i in self.shortCheckList:
 			logs = u'策略' + self.name + u'在1秒内重复开单 ' + self.shortsymbol + u'停止运行！'
