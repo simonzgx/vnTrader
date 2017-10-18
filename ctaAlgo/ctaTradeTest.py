@@ -228,10 +228,8 @@ class tradeTest(CtaTemplate):
 		    self.postoday[self.longsymbol] += self.longBuyUnit
 		    self.saveParameter()
 		    return
-            for x in range(0,len(self.buyPrice)):
-		i = len(self.buyPrice)-1-x
-	        if self.dfr_2 <= self.buyPrice[i] - self.stpProfit and self.postoday[self.shortsymbol]> i*self.shortBuyUnit :	
-		    print i
+		x = len(self.buyPrice)-1-i
+	        if self.dfr_2 <= self.buyPrice[x] - self.stpProfit and self.postoday[self.shortsymbol]> x*self.shortBuyUnit :	
 		    if i in self.shortCheckList:
 			logs = u'策略' + self.name + u'在1秒内重复开单 ' + self.shortsymbol + u'停止运行！'
 			self.isStart = False
@@ -239,14 +237,13 @@ class tradeTest(CtaTemplate):
 			self.putEvent()
 			return
 		    else :
-			self.shortCheckList.append(i)
+			self.shortCheckList.append(x)
 		    tradeId = self.cover(self.shortsymbolAskPrice+self.shortSlippage, self.shortBuyUnit, self.shortsymbol)
 		    
 		    self.postoday[self.shortsymbol] -= self.shortBuyUnit
 		    self.saveParameter()
 		    return
-		if self.dfr_2 <= self.buyPrice[i] - self.stpProfit and self.postoday[self.longsymbol]> i*self.longBuyUnit :
-		    print i
+		if self.dfr_2 <= self.buyPrice[x] - self.stpProfit and self.postoday[self.longsymbol]> x*self.longBuyUnit :
 		    if i in self.longCheckList:
 			logs = u'策略' + self.name + u'在1秒内重复开单 ' + self.longsymbol + u'停止运行！'
 			self.isStart = False
@@ -254,7 +251,7 @@ class tradeTest(CtaTemplate):
 			self.putEvent()
 			return
 		    else :
-			self.longCheckList.append(i)
+			self.longCheckList.append(x)
 		    tradeId = self.sell(self.longsymbolBidPrice-self.longSlippage, self.longBuyUnit, self.longsymbol)
 		    
 		    self.postoday[self.longsymbol] -= self.longBuyUnit
