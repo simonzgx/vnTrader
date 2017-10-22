@@ -16,6 +16,7 @@ from ctaBase import *
 from ctaTemplate import CtaTemplate
 from vtFunction import emailSender
 from uiBasicWidget import *
+import threading
 import re
 import numpy as np
 import datetime
@@ -187,11 +188,13 @@ class tradeTest(CtaTemplate):
 		title = logs
 		text = u'当前价差 ' + str(self.dfr)+'\r\n' + u'当前持仓 ：' + self.shortsymbol + ' : ' + str(self.postoday[self.shortsymbol]) + '\r\n'
 		text = text + self.longsymbol + ' : ' + str(self.postoday[self.longsymbol])
-		thread = threading.Thread(target=emailSender, args=(self.receivers, text, title))
-		thread.start()
-	        tradeId = self.cover(self.shortsymbolAskPrice+self.shortSlippage, self.postoday[self.shortsymbol], self.shortsymbol)    
+	        #tradeId = self.cover(self.shortsymbolAskPrice+self.shortSlippage, self.postoday[self.shortsymbol], self.shortsymbol)    
+		threadA = threading.Thread(target=self.cover, args=(self.shortsymbolAskPrice+self.shortSlippage, self.postoday[self.shortsymbol], self.shortsymbol))
+		threadA.start()
 	        self.postoday[self.shortsymbol] = 0
-	        tradeId = self.sell(self.longsymbolBidPrice-self.longSlippage, self.postoday[self.longsymbol], self.longsymbol)   
+	        #tradeId = self.sell(self.longsymbolBidPrice-self.longSlippage, self.postoday[self.longsymbol], self.longsymbol)   
+		threadB = threading.Thread(target=self.sell, args=(self.longsymbolBidPrice-self.longSlippage, self.postoday[self.longsymbol], self.longsymbol))
+		threadB.start()
 	        self.postoday[self.longsymbol] = 0
 	        self.isStop = True
 	        self.writeCtaLog(logs)
@@ -208,8 +211,9 @@ class tradeTest(CtaTemplate):
 			return
 		    else :
 			self.shortCheckList.append(i)
-		    tradeId = self.short(self.shortsymbolBidPrice-self.shortSlippage,self.shortBuyUnit,self.shortsymbol)
-		    
+		    #tradeId = self.short(self.shortsymbolBidPrice-self.shortSlippage,self.shortBuyUnit,self.shortsymbol)
+		    thread = threading.Thread(target=self.short, args=(self.shortsymbolBidPrice-self.shortSlippage,self.shortBuyUnit,self.shortsymbol))
+		    thread.start()
 		    self.postoday[self.shortsymbol] += self.shortBuyUnit
 		    self.saveParameter()
 		    return
@@ -223,8 +227,9 @@ class tradeTest(CtaTemplate):
 			return
 		    else :
 			self.longCheckList.append(i)
-		    tradeId = self.buy(self.longsymbolAskPrice+self.longSlippage, self.longBuyUnit, self.longsymbol)
-		    
+		    #tradeId = self.buy(self.longsymbolAskPrice+self.longSlippage, self.longBuyUnit, self.longsymbol)
+		    thread = threading.Thread(target=self.buy, args=(self.longsymbolAskPrice+self.longSlippage, self.longBuyUnit, self.longsymbol))
+		    thread.start()
 		    self.postoday[self.longsymbol] += self.longBuyUnit
 		    self.saveParameter()
 		    return
@@ -238,8 +243,9 @@ class tradeTest(CtaTemplate):
 			return
 		    else :
 			self.shortCheckList.append(x)
-		    tradeId = self.cover(self.shortsymbolAskPrice+self.shortSlippage, self.shortBuyUnit, self.shortsymbol)
-		    
+		    #tradeId = self.cover(self.shortsymbolAskPrice+self.shortSlippage, self.shortBuyUnit, self.shortsymbol)
+		    thread = threading.Thread(target=self.cover, args=(self.shortsymbolAskPrice+self.shortSlippage,self.shortBuyUnit, self.shortsymbol))
+		    thread.start()
 		    self.postoday[self.shortsymbol] -= self.shortBuyUnit
 		    self.saveParameter()
 		    return
@@ -252,8 +258,9 @@ class tradeTest(CtaTemplate):
 			return
 		    else :
 			self.longCheckList.append(x)
-		    tradeId = self.sell(self.longsymbolBidPrice-self.longSlippage, self.longBuyUnit, self.longsymbol)
-		    
+		    #tradeId = self.sell(self.longsymbolBidPrice-self.longSlippage, self.longBuyUnit, self.longsymbol)
+		    thread = threading.Thread(target=self.sell, args=(self.longsymbolBidPrice-self.longSlippage, self.longBuyUnit, self.longsymbol))
+		    thread.start()
 		    self.postoday[self.longsymbol] -= self.longBuyUnit
 		    self.saveParameter()
 		    return

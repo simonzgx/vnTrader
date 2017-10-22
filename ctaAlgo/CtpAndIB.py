@@ -208,8 +208,9 @@ class CtpAndIB(CtaTemplate):
 			return
 		    else :
 			self.shortCheckList.append(i)
-		    tradeId = self.short(self.shortsymbolBidPrice-self.shortSlippage,self.shortBuyUnit,self.shortsymbol,self.shortMKT)
-		    
+		    #tradeId = self.short(self.shortsymbolBidPrice-self.shortSlippage,self.shortBuyUnit,self.shortsymbol,self.shortMKT)
+		    thread = threading.Thread(target=self.short, args=(self.shortsymbolBidPrice-self.shortSlippage,self.shortBuyUnit,self.shortsymbol,self.shortMKT))
+		    thread.start()
 		    self.postoday[self.shortsymbol] += self.shortBuyUnit
 		    self.saveParameter()
 		if self.buyPrice[i] <= self.dfr and self.postoday[self.longsymbol]<(i+1)*self.longBuyUnit :
@@ -221,8 +222,9 @@ class CtpAndIB(CtaTemplate):
 			return
 		    else :
 			self.longCheckList.append(i)
-		    tradeId = self.buy(self.longsymbolAskPrice+self.longSlippage, self.longBuyUnit, self.longsymbol,self.longMKT)
-		    
+		    #tradeId = self.buy(self.longsymbolAskPrice+self.longSlippage, self.longBuyUnit, self.longsymbol,self.longMKT)
+		    thread = threading.Thread(target=self.buy, args=(self.longsymbolAskPrice+self.longSlippage, self.longBuyUnit, self.longsymbol,self.longMKT))
+		    thread.start()
 		    self.postoday[self.longsymbol] += self.longBuyUnit
 		    self.saveParameter()
 		x = len(self.buyPrice)-1-i
@@ -235,8 +237,9 @@ class CtpAndIB(CtaTemplate):
 			return
 		    else :
 			self.shortCheckList.append(x)
-		    tradeId = self.cover(self.shortsymbolAskPrice+self.shortSlippage, self.shortBuyUnit, self.shortsymbol, self.shortMKT)
-		    
+		    #tradeId = self.cover(self.shortsymbolAskPrice+self.shortSlippage, self.shortBuyUnit, self.shortsymbol, self.shortMKT)
+		    thread = threading.Thread(target=self.cover, args=(self.shortsymbolAskPrice+self.shortSlippage, self.shortBuyUnit, self.shortsymbol, self.shortMKT))
+		    thread.start()
 		    self.postoday[self.shortsymbol] -= self.shortBuyUnit
 		    self.saveParameter()
 		if self.dfr_2 <= self.buyPrice[x] - self.stpProfit and self.postoday[self.longsymbol]> x*self.longBuyUnit :
@@ -248,8 +251,9 @@ class CtpAndIB(CtaTemplate):
 			return
 		    else :
 			self.longCheckList.append(x)
-		    tradeId = self.sell(self.longsymbolBidPrice-self.longSlippage, self.longBuyUnit, self.longsymbol, self.longMKT)
-		    
+		    #tradeId = self.sell(self.longsymbolBidPrice-self.longSlippage, self.longBuyUnit, self.longsymbol, self.longMKT)
+		    thread = threading.Thread(target=self.sell, args=(self.longsymbolBidPrice-self.longSlippage, self.longBuyUnit, self.longsymbol, self.longMKT))
+		    thread.start()
 		    self.postoday[self.longsymbol] -= self.longBuyUnit
 		    self.saveParameter()
         self.putEvent()
